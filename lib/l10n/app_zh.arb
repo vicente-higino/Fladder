@@ -2165,5 +2165,9 @@
     },
     "leanBackModeTitle": "休闲模式",
     "leanBackModeDesc": "即使设备报告为 false，也要在 Android 设备上启用休闲模式。",
-    "leanBackModeInfo": "在 Android TV 设备上，默认重新启用“休闲模式”。在非 Android TV 设备上切换此选项可能会导致意外情况。"
+    "leanBackModeInfo": "在 Android TV 设备上，默认重新启用“休闲模式”。在非 Android TV 设备上切换此选项可能会导致意外情况。",
+    "rememberPlaybackRateTitle": "记住播放速度",
+    "rememberPlaybackRateDesc": "关闭播放器后重新使用上次选择的播放速度",
+    "defaultPlaybackRateTitle": "默认播放速度",
+    "defaultPlaybackRateDesc": "在你选择其他播放速度之前会一直使用"
 }

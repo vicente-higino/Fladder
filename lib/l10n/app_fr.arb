@@ -2135,5 +2135,9 @@
         }
     },
     "leanBackModeTitle": "Mode Lean-back",
-    "leanBackModeInfo": "Le mode Lean-back est réactivé par défaut sur les appareils AndroidTV. Activer cette option sur les appareils non-AndroidTV peut entraîner un comportement inattendu."
+    "leanBackModeInfo": "Le mode Lean-back est réactivé par défaut sur les appareils AndroidTV. Activer cette option sur les appareils non-AndroidTV peut entraîner un comportement inattendu.",
+    "rememberPlaybackRateTitle": "Mémoriser la vitesse de lecture",
+    "rememberPlaybackRateDesc": "Réutiliser la dernière vitesse de lecture sélectionnée après la fermeture du lecteur",
+    "defaultPlaybackRateTitle": "Vitesse de lecture par défaut",
+    "defaultPlaybackRateDesc": "Utilisée jusqu’à ce que vous choisissiez une autre vitesse de lecture"
 }

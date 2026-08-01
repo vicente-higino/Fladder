@@ -2099,5 +2099,9 @@
     "incognito": "Tryb incognito",
     "incognitoModeGlobal": "Tryb incognito (Aplikacja)",
     "incognitoModeLocal": "Tryb incognito (Profil)",
-    "incognitoModeDesc": "Tryb incognito wyłącza wysyłanie statusu odtwarzania do serwera"
+    "incognitoModeDesc": "Tryb incognito wyłącza wysyłanie statusu odtwarzania do serwera",
+    "rememberPlaybackRateTitle": "Zapamiętaj szybkość odtwarzania",
+    "rememberPlaybackRateDesc": "Ponownie użyj ostatnio wybranej szybkości odtwarzania po zamknięciu odtwarzacza",
+    "defaultPlaybackRateTitle": "Domyślna szybkość odtwarzania",
+    "defaultPlaybackRateDesc": "Używane do momentu wybrania innej szybkości odtwarzania"
 }

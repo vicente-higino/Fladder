@@ -1954,5 +1954,9 @@
     "newsCategoriesSubLabel": "Haber ön ekiyle eşleşen kanallara atanacak kategoriler",
     "sportsCategoriesSubLabel": "Spor ön ekiyle eşleşen kanallara atanacak kategoriler",
     "kidsCategoriesSubLabel": "Çocuk ön ekiyle eşleşen kanallara atanacak kategoriler",
-    "enableNewTVLayoutDesc": "Kontrol panelinde daha büyük, TV stili afişler gösterir. Bu, gelecekteki bir sürümde varsayılan düzen olacaktır."
+    "enableNewTVLayoutDesc": "Kontrol panelinde daha büyük, TV stili afişler gösterir. Bu, gelecekteki bir sürümde varsayılan düzen olacaktır.",
+    "rememberPlaybackRateTitle": "Oynatma hızını hatırla",
+    "rememberPlaybackRateDesc": "Oynatıcı kapatıldıktan sonra son seçilen oynatma hızını tekrar kullan",
+    "defaultPlaybackRateTitle": "Varsayılan oynatma hızı",
+    "defaultPlaybackRateDesc": "Başka bir oynatma hızı seçene kadar kullanılır"
 }

@@ -2047,5 +2047,9 @@
     "pictureInPictureAutoTitle": "Включать \"картинку в картинке\" автоматически",
     "@pictureInPictureAutoTitle": {
         "description": "Title of the auto-enter Picture-in-Picture setting toggle"
-    }
+    },
+    "rememberPlaybackRateTitle": "Запомнить скорость воспроизведения",
+    "rememberPlaybackRateDesc": "Повторно использовать последнюю выбранную скорость воспроизведения после закрытия плеера",
+    "defaultPlaybackRateTitle": "Скорость воспроизведения по умолчанию",
+    "defaultPlaybackRateDesc": "Используется до тех пор, пока вы не выберете другую скорость воспроизведения"
 }

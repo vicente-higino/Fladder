@@ -1224,5 +1224,9 @@
     "enableSpeedBoostDesc": "Držte obrazovku (mobil) nebo mezerník (počítač) pro dočasně zvýšení rychlosti přehrávání",
     "speedBoostRateTitle": "Míra zrychlení",
     "speedBoostRateDesc": "Rychlost přehrávání po aktivaci zrychlení",
-    "homeBannerDetailed": "Detailní"
+    "homeBannerDetailed": "Detailní",
+    "rememberPlaybackRateTitle": "Zapamatovat rychlost přehrávání",
+    "rememberPlaybackRateDesc": "Znovu použít poslední vybranou rychlost přehrávání po zavření přehrávače",
+    "defaultPlaybackRateTitle": "Výchozí rychlost přehrávání",
+    "defaultPlaybackRateDesc": "Použije se, dokud nezvolíte jinou rychlost přehrávání"
 }

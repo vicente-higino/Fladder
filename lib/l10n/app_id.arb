@@ -2282,5 +2282,9 @@
     },
     "leanBackModeTitle": "Mode Santai",
     "leanBackModeDesc": "Aktifkan mode santai pada perangkat Android, bahkan jika perangkat melaporkan sebagai false.",
-    "leanBackModeInfo": "Mode santai diaktifkan ulang secara default pada perangkat AndroidTV. Mengaktifkan opsi ini pada perangkat non-AndroidTV dapat menyebabkan perilaku yang tidak diharapkan."
+    "leanBackModeInfo": "Mode santai diaktifkan ulang secara default pada perangkat AndroidTV. Mengaktifkan opsi ini pada perangkat non-AndroidTV dapat menyebabkan perilaku yang tidak diharapkan.",
+    "rememberPlaybackRateTitle": "Ingat kecepatan pemutaran",
+    "rememberPlaybackRateDesc": "Gunakan kembali kecepatan pemutaran terakhir yang dipilih setelah menutup pemutar",
+    "defaultPlaybackRateTitle": "Kecepatan pemutaran default",
+    "defaultPlaybackRateDesc": "Digunakan sampai Anda memilih kecepatan yang berbeda"
 }

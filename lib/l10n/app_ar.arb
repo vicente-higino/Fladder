@@ -2168,5 +2168,9 @@
     },
     "leanBackModeTitle": "وضع الاسترخاء",
     "leanBackModeDesc": "تفعيل وضع الاسترخاء على أجهزة أندرويد، حتى إذا أبلغ الجهاز بعدم دعمه.",
-    "leanBackModeInfo": "وضع الاسترخاء مُفعّل افتراضياً على أجهزة AndroidTV. تفعيل هذا الخيار على أجهزة أخرى قد يسبب سلوكاً غير متوقع."
+    "leanBackModeInfo": "وضع الاسترخاء مُفعّل افتراضياً على أجهزة AndroidTV. تفعيل هذا الخيار على أجهزة أخرى قد يسبب سلوكاً غير متوقع.",
+    "rememberPlaybackRateTitle": "تذكر معدل التشغيل",
+    "rememberPlaybackRateDesc": "إعادة استخدام آخر معدل تشغيل محدد بعد إغلاق المشغل",
+    "defaultPlaybackRateTitle": "معدل التشغيل الافتراضي",
+    "defaultPlaybackRateDesc": "يُستخدم حتى تختار معدل تشغيل مختلف"
 }
