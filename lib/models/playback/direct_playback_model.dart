@@ -24,6 +24,7 @@ class DirectPlaybackModel extends PlaybackModel {
     super.playbackInfo,
     super.mediaStreams,
     super.mediaSegments,
+    super.shouldRefreshMediaSegments,
     super.chapters,
     super.trickPlay,
     super.queue,
@@ -133,6 +134,17 @@ class DirectPlaybackModel extends PlaybackModel {
   }
 
   @override
+  bool get supportsMediaSegmentRefresh => true;
+
+  @override
+  DirectPlaybackModel withMediaSegments(MediaSegmentsModel mediaSegments) {
+    return copyWith(
+      mediaSegments: () => mediaSegments,
+      shouldRefreshMediaSegments: false,
+    );
+  }
+
+  @override
   String toString() => 'DirectPlaybackModel(item: $item, playbackInfo: $playbackInfo)';
 
   @override
@@ -143,6 +155,7 @@ class DirectPlaybackModel extends PlaybackModel {
     PlaybackInfoResponse? playbackInfo,
     ValueGetter<MediaStreamsModel?>? mediaStreams,
     ValueGetter<MediaSegmentsModel?>? mediaSegments,
+    bool? shouldRefreshMediaSegments,
     ValueGetter<List<Chapter>?>? chapters,
     ValueGetter<TrickPlayModel?>? trickPlay,
     List<ItemBaseModel>? queue,
@@ -156,6 +169,7 @@ class DirectPlaybackModel extends PlaybackModel {
       playbackInfo: playbackInfo ?? this.playbackInfo,
       mediaStreams: mediaStreams != null ? mediaStreams() : this.mediaStreams,
       mediaSegments: mediaSegments != null ? mediaSegments() : this.mediaSegments,
+      shouldRefreshMediaSegments: shouldRefreshMediaSegments ?? this.shouldRefreshMediaSegments,
       chapters: chapters != null ? chapters() : this.chapters,
       trickPlay: trickPlay != null ? trickPlay() : this.trickPlay,
       queue: queue ?? this.queue,

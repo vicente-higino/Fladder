@@ -85,6 +85,7 @@ class PlaybackModel {
   List<ItemBaseModel> get nextUpQueue => playbackQueue.nextUpQueue;
   final PlaybackQueueSource? queueSource;
   final MediaSegmentsModel? mediaSegments;
+  final bool shouldRefreshMediaSegments;
   final PlaybackInfoResponse? playbackInfo;
 
   Map<Bitrate, bool> bitRateOptions;
@@ -126,6 +127,10 @@ class PlaybackModel {
 
   PlaybackModel updatePlaybackQueue(PlaybackQueueState newQueue) => throw UnimplementedError();
 
+  bool get supportsMediaSegmentRefresh => false;
+
+  PlaybackModel withMediaSegments(MediaSegmentsModel mediaSegments) => this;
+
   ItemBaseModel? get nextVideo => playbackQueue.nextItem(item.id);
   ItemBaseModel? get previousVideo => playbackQueue.previousItem(item.id);
 
@@ -141,6 +146,7 @@ class PlaybackModel {
     this.queueSource,
     this.bitRateOptions = const {},
     this.mediaSegments,
+    this.shouldRefreshMediaSegments = false,
     this.chapters,
     this.trickPlay,
   }) : playbackQueue = playbackQueue ??
@@ -425,6 +431,8 @@ class PlaybackModelHelper {
       );
 
       final mediaSegments = await api.mediaSegmentsGet(id: item.id);
+      final shouldRefreshMediaSegments =
+          mediaSegments?.isSuccessful == true && (mediaSegments?.body?.segments.isEmpty ?? true);
 
       final trickPlayResp = await api.getTrickPlay(item: item, ref: ref);
 
@@ -474,6 +482,7 @@ class PlaybackModelHelper {
           playbackQueue: oldModel?.playbackQueue,
           queueSource: queueSource,
           mediaSegments: mediaSegments?.body,
+          shouldRefreshMediaSegments: shouldRefreshMediaSegments,
           chapters: chapters,
           playbackInfo: playbackInfo,
           trickPlay: trickPlay,
@@ -488,6 +497,7 @@ class PlaybackModelHelper {
           playbackQueue: oldModel?.playbackQueue,
           queueSource: queueSource,
           mediaSegments: mediaSegments?.body,
+          shouldRefreshMediaSegments: shouldRefreshMediaSegments,
           chapters: chapters,
           trickPlay: trickPlay,
           playbackInfo: playbackInfo,
@@ -618,6 +628,7 @@ class PlaybackModelHelper {
         queue: playbackModel.queue,
         playbackQueue: playbackModel.playbackQueue,
         mediaSegments: playbackModel.mediaSegments,
+        shouldRefreshMediaSegments: playbackModel.shouldRefreshMediaSegments,
         chapters: playbackModel.chapters,
         playbackInfo: playbackInfo,
         trickPlay: playbackModel.trickPlay,
@@ -631,6 +642,7 @@ class PlaybackModelHelper {
         queue: playbackModel.queue,
         playbackQueue: playbackModel.playbackQueue,
         mediaSegments: playbackModel.mediaSegments,
+        shouldRefreshMediaSegments: playbackModel.shouldRefreshMediaSegments,
         chapters: playbackModel.chapters,
         playbackInfo: playbackInfo,
         trickPlay: playbackModel.trickPlay,

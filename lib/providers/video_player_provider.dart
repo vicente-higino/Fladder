@@ -9,8 +9,10 @@ import 'package:path/path.dart' as p;
 
 import 'package:fladder/models/item_base_model.dart';
 import 'package:fladder/models/media_playback_model.dart';
+import 'package:fladder/models/playback/media_segment_refresh_controller.dart';
 import 'package:fladder/models/playback/playback_model.dart';
 import 'package:fladder/models/playback/playback_queue_state.dart';
+import 'package:fladder/providers/api_provider.dart';
 import 'package:fladder/providers/settings/client_settings_provider.dart';
 import 'package:fladder/providers/settings/video_player_settings_provider.dart';
 import 'package:fladder/wrappers/media_control_wrapper.dart';
@@ -22,6 +24,14 @@ final playBackModel = StateProvider<PlaybackModel?>((ref) => null);
 final videoPlayerProvider =
     StateNotifierProvider<VideoPlayerNotifier, MediaControlsWrapper>((ref) {
   final videoPlayer = VideoPlayerNotifier(ref);
+  ref.listen(
+    mediaPlaybackProvider.select((value) => value.state),
+    (_, state) {
+      if (state == VideoPlayerState.disposed) {
+        videoPlayer.cancelMediaSegmentRefresh();
+      }
+    },
+  );
   if (defaultTargetPlatform != TargetPlatform.windows) {
     unawaited(videoPlayer.init());
   }
@@ -43,6 +53,16 @@ class VideoPlayerNotifier extends StateNotifier<MediaControlsWrapper> {
   List<StreamSubscription> subscriptions = [];
   Future<void>? _initialization;
   bool _hasCompletedInitialization = false;
+
+  late final MediaSegmentRefreshController _mediaSegmentRefreshController = MediaSegmentRefreshController(
+    fetch: (itemId) async {
+      final response = await ref.read(jellyApiProvider).mediaSegmentsGet(id: itemId);
+      return response?.isSuccessful == true ? response?.body : null;
+    },
+    readActivePlayback: () => ref.read(playBackModel),
+    writeActivePlayback: (model) => ref.read(playBackModel.notifier).state = model,
+    isPlaybackActive: () => ref.read(mediaPlaybackProvider).state != VideoPlayerState.disposed,
+  );
 
   late final mediaState = ref.read(mediaPlaybackProvider.notifier);
 
@@ -156,6 +176,7 @@ class VideoPlayerNotifier extends StateNotifier<MediaControlsWrapper> {
   }
 
   Future<bool> loadPlaybackItem(PlaybackModel model, Duration startPosition) async {
+    _mediaSegmentRefreshController.cancel();
     ref.read(playBackModel)?.dispose();
     await state.stop();
     final playbackSettings = ref.read(videoPlayerSettingsProvider);
@@ -179,6 +200,7 @@ class VideoPlayerNotifier extends StateNotifier<MediaControlsWrapper> {
 
     if (media != null) {
       ref.read(playBackModel.notifier).update((state) => newPlaybackModel);
+      _mediaSegmentRefreshController.schedule(model);
       await state.loadVideo(model, effectiveStartPosition, true);
       await state.setVolume(ref.read(videoPlayerSettingsProvider).volume);
       if (playbackSettings.rememberPlaybackRate) {
@@ -209,6 +231,7 @@ class VideoPlayerNotifier extends StateNotifier<MediaControlsWrapper> {
     int currentIndex,
     Duration startPosition,
   ) async {
+    _mediaSegmentRefreshController.cancel();
     final currentPlayerState = ref.read(mediaPlaybackProvider).state;
     final keepFullScreenLayout = currentPlayerState == VideoPlayerState.fullScreen;
     final playbackSettings = ref.read(mediaPlaybackProvider);
@@ -285,6 +308,8 @@ class VideoPlayerNotifier extends StateNotifier<MediaControlsWrapper> {
 
   Future<void> openPlayer(BuildContext context) async => state.openPlayer(context);
 
+  void cancelMediaSegmentRefresh() => _mediaSegmentRefreshController.cancel();
+
   Future<bool> takeScreenshot() async {
     final syncPath = ref.read(clientSettingsProvider).syncPath;
     // Early return here if we don't have a set/valid path. Skips actually taking the screenshot
@@ -338,5 +363,11 @@ class VideoPlayerNotifier extends StateNotifier<MediaControlsWrapper> {
     }
 
     return false;
+  }
+
+  @override
+  void dispose() {
+    _mediaSegmentRefreshController.dispose();
+    super.dispose();
   }
 }
