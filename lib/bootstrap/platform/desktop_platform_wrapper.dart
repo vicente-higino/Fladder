@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_window_utils/window_manipulator.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:smtc_windows/smtc_windows.dart' if (dart.library.html) 'package:fladder/stubs/web/smtc_web.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'package:fladder/bootstrap/platform/base_app_wrapper.dart';
@@ -23,14 +24,16 @@ class DesktopAppWrapper extends BaseAppWrapper {
   ConsumerState<DesktopAppWrapper> createState() => _DesktopAppWrapperState();
 }
 
-class _DesktopAppWrapperState extends BaseAppWrapperState<DesktopAppWrapper>
-    with WindowListener {
+class _DesktopAppWrapperState extends BaseAppWrapperState<DesktopAppWrapper> with WindowListener {
   bool _windowPlacementInitialized = false;
   bool _windowIsMaximized = false;
   bool _windowIsFullScreen = false;
 
   @override
   Future<void> platformInit() async {
+    if (defaultTargetPlatform == TargetPlatform.windows) {
+      await SMTCWindows.initialize();
+    }
     if (defaultTargetPlatform == TargetPlatform.macOS) {
       await WindowManipulator.initialize(enableWindowDelegate: true);
     }
@@ -38,24 +41,23 @@ class _DesktopAppWrapperState extends BaseAppWrapperState<DesktopAppWrapper>
     ApplicationMenu.setUp(ApplicationMenuImp());
 
     await WindowManager.instance.ensureInitialized();
+    _windowPlacementInitialized = defaultTargetPlatform != TargetPlatform.windows;
+    if (_windowPlacementInitialized) {
+      _windowIsMaximized = await windowManager.isMaximized();
+      _windowIsFullScreen = await windowManager.isFullScreen();
+    }
     windowManager.addListener(this);
-    _windowIsMaximized = await windowManager.isMaximized();
-    _windowIsFullScreen = await windowManager.isFullScreen();
 
     final packageInfo = await PackageInfo.fromPlatform();
     final clientSettings = ref.read(clientSettingsProvider);
     final startupArguments = ref.read(argumentsStateProvider);
-    await windowManager.setupFladderWindowChrome(
-      startupArguments,
-      clientSettings,
-      packageInfo,
-    );
+    await windowManager.setupFladderWindowChrome(startupArguments, clientSettings, packageInfo);
     if (defaultTargetPlatform == TargetPlatform.windows) {
       unawaited(_enableWindowPlacementPersistenceAfterStartup());
-    } else {
-      _windowPlacementInitialized = true;
     }
-    await toggleMacTrafficLights(await windowManager.isFullScreen());
+    if (defaultTargetPlatform == TargetPlatform.macOS) {
+      await toggleMacTrafficLights(await windowManager.isFullScreen());
+    }
   }
 
   Future<void> _enableWindowPlacementPersistenceAfterStartup() async {
@@ -140,9 +142,7 @@ class _DesktopAppWrapperState extends BaseAppWrapperState<DesktopAppWrapper>
   @override
   void onWindowEnterFullScreen() {
     _windowIsFullScreen = true;
-    ref
-        .read(mediaPlaybackProvider.notifier)
-        .update((state) => state.copyWith(fullScreen: true));
+    ref.read(mediaPlaybackProvider.notifier).update((state) => state.copyWith(fullScreen: true));
     unawaited(toggleMacTrafficLights(true));
     super.onWindowEnterFullScreen();
   }
@@ -151,9 +151,7 @@ class _DesktopAppWrapperState extends BaseAppWrapperState<DesktopAppWrapper>
   void onWindowLeaveFullScreen() {
     _windowIsFullScreen = false;
     unawaited(toggleMacTrafficLights(false));
-    ref
-        .read(mediaPlaybackProvider.notifier)
-        .update((state) => state.copyWith(fullScreen: false));
+    ref.read(mediaPlaybackProvider.notifier).update((state) => state.copyWith(fullScreen: false));
     super.onWindowLeaveFullScreen();
   }
 }

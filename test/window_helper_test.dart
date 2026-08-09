@@ -4,93 +4,57 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fladder/util/window_helper.dart';
 
 void main() {
-  test('Windows startup uses an opaque background', () {
-    final color = fladderStartupBackgroundColor(TargetPlatform.windows);
-
-    expect(color, windowsStartupBackgroundColor);
-    expect(color.a, 1.0);
+  test('native startup bounds are not treated as external placement', () {
+    expect(hasExternalWindowsPlacement(windowsNativeStartupBounds), isFalse);
   });
 
-  test('Windows bypasses waitUntilReadyToShow', () {
-    expect(
-      shouldUseWaitUntilReadyToShow(TargetPlatform.windows, debugMode: false),
-      isFalse,
-    );
+  test('detects placement by an external window manager', () {
+    expect(hasExternalWindowsPlacement(const Rect.fromLTWH(-7, 0, 2574, 1393)), isTrue);
   });
 
-  test('Windows keeps native taskbar visibility during startup', () {
-    expect(
-      shouldSetTaskbarVisibilityDuringStartup(TargetPlatform.windows),
-      isFalse,
-    );
-    expect(
-      shouldSetTaskbarVisibilityDuringStartup(TargetPlatform.macOS),
-      isTrue,
-    );
+  test('minor native rounding differences are tolerated', () {
+    expect(hasExternalWindowsPlacement(const Rect.fromLTWH(10, 10, 1281, 721)), isFalse);
   });
 
-  test('stored bounds do not override maximized or fullscreen windows', () {
+  test('stored bounds restore only while the native startup placement remains', () {
     expect(
-      shouldApplyStoredWindowBounds(isFullScreen: false, isMaximized: true),
-      isFalse,
-    );
-    expect(
-      shouldApplyStoredWindowBounds(isFullScreen: true, isMaximized: false),
-      isFalse,
-    );
-    expect(
-      shouldApplyStoredWindowBounds(isFullScreen: false, isMaximized: false),
-      isTrue,
-    );
-  });
-
-  test('window bounds are persisted only after startup settles', () {
-    expect(
-      shouldPersistWindowBounds(
-        startupSettled: false,
-        isFullScreen: false,
-        isMaximized: false,
-      ),
-      isFalse,
-    );
-    expect(
-      shouldPersistWindowBounds(
-        startupSettled: true,
+      shouldRestoreStoredWindowsBounds(
+        currentBounds: windowsNativeStartupBounds,
         isFullScreen: false,
         isMaximized: false,
       ),
       isTrue,
     );
     expect(
-      shouldPersistWindowBounds(
-        startupSettled: true,
+      shouldRestoreStoredWindowsBounds(
+        currentBounds: const Rect.fromLTWH(-7, 0, 2574, 1393),
+        isFullScreen: false,
+        isMaximized: false,
+      ),
+      isFalse,
+    );
+    expect(
+      shouldRestoreStoredWindowsBounds(
+        currentBounds: windowsNativeStartupBounds,
         isFullScreen: false,
         isMaximized: true,
       ),
       isFalse,
     );
-  });
-
-  test('detects normal-window placement by an external window manager', () {
-    expect(hasExternalWindowsPlacement(windowsNativeStartupBounds), isFalse);
     expect(
-      hasExternalWindowsPlacement(const Rect.fromLTWH(-7, 0, 2574, 1393)),
-      isTrue,
-    );
-    expect(
-      hasExternalWindowsPlacement(const Rect.fromLTWH(10, 10, 1281, 721)),
+      shouldRestoreStoredWindowsBounds(
+        currentBounds: windowsNativeStartupBounds,
+        isFullScreen: true,
+        isMaximized: false,
+      ),
       isFalse,
     );
   });
 
-  test('other release desktop platforms retain ready-to-show behavior', () {
-    expect(
-      shouldUseWaitUntilReadyToShow(TargetPlatform.linux, debugMode: false),
-      isTrue,
-    );
-    expect(
-      shouldUseWaitUntilReadyToShow(TargetPlatform.macOS, debugMode: false),
-      isTrue,
-    );
+  test('window bounds persist only after startup and outside maximized modes', () {
+    expect(shouldPersistWindowBounds(startupSettled: false, isFullScreen: false, isMaximized: false), isFalse);
+    expect(shouldPersistWindowBounds(startupSettled: true, isFullScreen: false, isMaximized: false), isTrue);
+    expect(shouldPersistWindowBounds(startupSettled: true, isFullScreen: false, isMaximized: true), isFalse);
+    expect(shouldPersistWindowBounds(startupSettled: true, isFullScreen: true, isMaximized: false), isFalse);
   });
 }

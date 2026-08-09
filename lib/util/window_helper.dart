@@ -10,49 +10,9 @@ import 'package:fladder/models/settings/arguments_model.dart';
 import 'package:fladder/models/settings/client_settings_model.dart';
 import 'package:fladder/util/string_extensions.dart';
 
-const windowsStartupBackgroundColor = Color(0xFF101114);
 const windowsNativeStartupBounds = Rect.fromLTWH(10, 10, 1280, 720);
-const windowsPostNativeShowDelay = Duration(milliseconds: 600);
 const windowsExternalPlacementSettleDelay = Duration(milliseconds: 750);
 const windowsWindowPlacementPersistenceDelay = Duration(milliseconds: 2500);
-
-@visibleForTesting
-Color fladderStartupBackgroundColor(TargetPlatform platform) =>
-    platform == TargetPlatform.windows
-        ? windowsStartupBackgroundColor
-        : Colors.transparent;
-
-@visibleForTesting
-bool shouldUseWaitUntilReadyToShow(
-  TargetPlatform platform, {
-  required bool debugMode,
-}) {
-  if (platform == TargetPlatform.windows) return false;
-  if (platform == TargetPlatform.macOS && debugMode) return false;
-  return true;
-}
-
-@visibleForTesting
-bool shouldSetTaskbarVisibilityDuringStartup(TargetPlatform platform) =>
-    platform != TargetPlatform.windows;
-
-@visibleForTesting
-bool shouldApplyStoredWindowBounds({
-  required bool isFullScreen,
-  required bool isMaximized,
-}) =>
-    !isFullScreen && !isMaximized;
-
-bool shouldPersistWindowBounds({
-  required bool startupSettled,
-  required bool isFullScreen,
-  required bool isMaximized,
-}) =>
-    startupSettled &&
-    shouldApplyStoredWindowBounds(
-      isFullScreen: isFullScreen,
-      isMaximized: isMaximized,
-    );
 
 @visibleForTesting
 bool hasExternalWindowsPlacement(Rect bounds, {double tolerance = 2}) =>
@@ -61,39 +21,51 @@ bool hasExternalWindowsPlacement(Rect bounds, {double tolerance = 2}) =>
     (bounds.width - windowsNativeStartupBounds.width).abs() > tolerance ||
     (bounds.height - windowsNativeStartupBounds.height).abs() > tolerance;
 
+@visibleForTesting
+bool shouldRestoreStoredWindowsBounds({
+  required Rect currentBounds,
+  required bool isFullScreen,
+  required bool isMaximized,
+}) =>
+    !isFullScreen && !isMaximized && !hasExternalWindowsPlacement(currentBounds);
+
+bool shouldPersistWindowBounds({required bool startupSettled, required bool isFullScreen, required bool isMaximized}) =>
+    startupSettled && !isFullScreen && !isMaximized;
+
 extension WindowHelperSetup on WindowManager {
-  Future<void> _settleWindowsAfterNativeShow({
-    required bool restoreStoredBounds,
-    required Size storedSize,
+  Future<void> _applyWindowsWindowStateAfterSettle({
+    required ArgumentsModel startupArguments,
+    required ClientSettingsModel clientSettings,
+    required PackageInfo packageInfo,
   }) async {
-    await Future<void>.delayed(windowsPostNativeShowDelay);
-    await windowManager.focus();
-
-    if (restoreStoredBounds) {
-      await _restoreWindowsBoundsAfterExternalManagers(storedSize);
-    }
-  }
-
-  Future<void> _restoreWindowsBoundsAfterExternalManagers(
-    Size storedSize,
-  ) async {
     await Future<void>.delayed(windowsExternalPlacementSettleDelay);
 
     final isCurrentlyFullScreen = await windowManager.isFullScreen();
     final isCurrentlyMaximized = await windowManager.isMaximized();
     final currentBounds = await windowManager.getBounds();
-    final externallyPositioned = hasExternalWindowsPlacement(currentBounds);
+    final shouldRestoreBounds = shouldRestoreStoredWindowsBounds(
+      currentBounds: currentBounds,
+      isFullScreen: isCurrentlyFullScreen,
+      isMaximized: isCurrentlyMaximized,
+    );
 
-    if (!shouldApplyStoredWindowBounds(
-          isFullScreen: isCurrentlyFullScreen,
-          isMaximized: isCurrentlyMaximized,
-        ) ||
-        externallyPositioned) {
+    // These calls are deliberately deferred until Flutter's first frame and
+    // external window placement have both had time to complete. A new Windows
+    // window is taskbar-visible by default, so setSkipTaskbar(false) is not
+    // needed here.
+    await windowManager.setBackgroundColor(Colors.transparent);
+    await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+    await windowManager.setTitle(packageInfo.appName.capitalize());
+
+    if (startupArguments.htpcMode && !isCurrentlyFullScreen) {
+      await windowManager.setFullScreen(true);
       return;
     }
 
-    await windowManager.setSize(storedSize);
-    await windowManager.center();
+    if (shouldRestoreBounds) {
+      await windowManager.setSize(Size(clientSettings.size.x, clientSettings.size.y));
+      await windowManager.center();
+    }
   }
 
   Future<void> setupFladderWindowChrome(
@@ -101,13 +73,23 @@ extension WindowHelperSetup on WindowManager {
     ClientSettingsModel clientSettings,
     PackageInfo packageInfo,
   ) async {
+    if (defaultTargetPlatform == TargetPlatform.windows) {
+      unawaited(
+        _applyWindowsWindowStateAfterSettle(
+          startupArguments: startupArguments,
+          clientSettings: clientSettings,
+          packageInfo: packageInfo,
+        ),
+      );
+      return;
+    }
+
     final isFullScreen = await windowManager.isFullScreen();
-    final isMacDebug =
-        defaultTargetPlatform == TargetPlatform.macOS && kDebugMode;
+    final isMacDebug = defaultTargetPlatform == TargetPlatform.macOS && kDebugMode;
     final shouldResizeAndShow = !isMacDebug || !isFullScreen;
 
     final options = WindowOptions(
-      backgroundColor: fladderStartupBackgroundColor(defaultTargetPlatform),
+      backgroundColor: Colors.transparent,
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.hidden,
       title: packageInfo.appName.capitalize(),
@@ -115,53 +97,23 @@ extension WindowHelperSetup on WindowManager {
 
     // Apply window chrome consistently; only skip waitUntilReadyToShow on macOS debug to avoid breaking full-screen during hot reloads.
     Future<void> applyWindowState() async {
-      final isCurrentlyFullScreen = await windowManager.isFullScreen();
-      final isCurrentlyMaximized = await windowManager.isMaximized();
-      final applyStoredBounds = shouldApplyStoredWindowBounds(
-        isFullScreen: isCurrentlyFullScreen,
-        isMaximized: isCurrentlyMaximized,
-      );
-      final isWindows = defaultTargetPlatform == TargetPlatform.windows;
-
-      if (shouldResizeAndShow && isWindows) {
-        // The native runner owns the first show on Windows. Let external
-        // window managers place the visible window before considering saved
-        // bounds, so Fladder does not immediately undo their placement.
-        unawaited(
-          _settleWindowsAfterNativeShow(
-            restoreStoredBounds: applyStoredBounds,
-            storedSize: Size(clientSettings.size.x, clientSettings.size.y),
-          ),
-        );
-      } else if (shouldResizeAndShow && applyStoredBounds) {
-        await windowManager.setSize(
-          Size(clientSettings.size.x, clientSettings.size.y),
-        );
+      if (shouldResizeAndShow) {
+        await windowManager.setSize(Size(clientSettings.size.x, clientSettings.size.y));
         await windowManager.center();
         await windowManager.show();
         await windowManager.focus();
       }
 
-      if (startupArguments.htpcMode && !isCurrentlyFullScreen) {
+      if (startupArguments.htpcMode && !isFullScreen) {
         await windowManager.setFullScreen(true);
       }
     }
 
-    if (!shouldUseWaitUntilReadyToShow(
-      defaultTargetPlatform,
-      debugMode: kDebugMode,
-    )) {
+    if (isMacDebug) {
       await windowManager.setBackgroundColor(options.backgroundColor!);
-      // setSkipTaskbar(false) initializes taskbar COM inside window_manager
-      // and can block the Windows platform channel during startup. A newly
-      // created runner window is already taskbar-visible.
-      if (shouldSetTaskbarVisibilityDuringStartup(defaultTargetPlatform)) {
-        await windowManager.setSkipTaskbar(options.skipTaskbar ?? false);
-      }
+      await windowManager.setSkipTaskbar(options.skipTaskbar ?? false);
       await windowManager.setTitleBarStyle(options.titleBarStyle!);
-      await windowManager.setTitle(
-        options.title ?? packageInfo.appName.capitalize(),
-      );
+      await windowManager.setTitle(options.title ?? packageInfo.appName.capitalize());
       await applyWindowState();
     } else {
       await windowManager.waitUntilReadyToShow(options, applyWindowState);
