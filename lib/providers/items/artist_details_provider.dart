@@ -66,7 +66,7 @@ class ArtistDetailsNotifier extends StateNotifier<ArtistModel?> {
 
   Future<void> fetchAlbums() async {
     if (state == null) return;
-    if (ref.read(connectivityStatusProvider) == ConnectionState.offline) {
+    if (ref.read(connectivityStatusProvider).isOffline) {
       final albums = (await ref.read(syncProvider.notifier).getChildren(state!.id))
           .map((item) => item.itemModel)
           .whereType<AlbumModel>()
@@ -113,7 +113,7 @@ class ArtistDetailsNotifier extends StateNotifier<ArtistModel?> {
 
   Future<void> fetchFavoriteTracks() async {
     if (state == null) return;
-    if (ref.read(connectivityStatusProvider) == ConnectionState.offline) {
+    if (ref.read(connectivityStatusProvider).isOffline) {
       final syncedItem = await ref.read(syncProvider.notifier).getSyncedItem(state!.id);
       if (syncedItem == null) return;
 
@@ -154,7 +154,7 @@ class ArtistDetailsNotifier extends StateNotifier<ArtistModel?> {
 
   Future<void> fetchTracks({int limit = 10}) async {
     if (state == null) return;
-    if (ref.read(connectivityStatusProvider) == ConnectionState.offline) {
+    if (ref.read(connectivityStatusProvider).isOffline) {
       final syncedItem = await ref.read(syncProvider.notifier).getSyncedItem(state!.id);
       if (syncedItem == null) return;
 
@@ -254,7 +254,7 @@ class ArtistDetailsNotifier extends StateNotifier<ArtistModel?> {
 
   Future<void> fetchSimilarArtists() async {
     if (state == null) return;
-    if (ref.read(connectivityStatusProvider) == ConnectionState.offline) {
+    if (ref.read(connectivityStatusProvider).isOffline) {
       return;
     }
 

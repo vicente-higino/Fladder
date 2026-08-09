@@ -191,8 +191,9 @@ class User extends _$User {
   void setLocalURL(String? value) {
     final user = state;
     if (user == null) return;
-    state = user.copyWith(
-      credentials: user.credentials.copyWith(localUrl: value?.isEmpty == true ? null : value),
+    final trimmed = value?.trim() ?? '';
+    userState = user.copyWith(
+      credentials: user.credentials.copyWith(localUrl: trimmed.isEmpty ? null : normalizeUrl(trimmed)),
     );
   }
 

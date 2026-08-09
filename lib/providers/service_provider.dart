@@ -106,7 +106,7 @@ class JellyService {
   Future<Response<ItemBaseModel>> usersUserIdItemsItemIdGet({
     String? itemId,
   }) async {
-    final isOffline = ref.read(connectivityStatusProvider.notifier).getConnectivityStates() == ConnectionState.offline;
+    final isOffline = ref.read(connectivityStatusProvider).isOffline;
     if (isOffline) {
       return _syncedItemResponse(itemId);
     }
@@ -125,7 +125,7 @@ class JellyService {
   Future<Response<BaseItemDto>> usersUserIdItemsItemIdGetBaseItem({
     String? itemId,
   }) async {
-    final isOffline = ref.read(connectivityStatusProvider.notifier).getConnectivityStates() == ConnectionState.offline;
+    final isOffline = ref.read(connectivityStatusProvider).isOffline;
     if (isOffline) {
       final syncedItem = await ref.read(syncProvider.notifier).getSyncedItem(itemId);
       return syncedItem?.data != null
@@ -280,101 +280,10 @@ class JellyService {
     bool? enableTotalRecordCount,
     bool? enableImages,
   }) async {
-    final response = await api.usersUserIdItemsGet(
-      userId: account?.id,
-      maxOfficialRating: maxOfficialRating,
-      hasThemeSong: hasThemeSong,
-      hasThemeVideo: hasThemeVideo,
-      hasSubtitles: hasSubtitles,
-      hasSpecialFeature: hasSpecialFeature,
-      hasTrailer: hasTrailer,
-      adjacentTo: adjacentTo,
-      parentIndexNumber: parentIndexNumber,
-      hasParentalRating: hasParentalRating,
-      isHd: isHd,
-      is4K: is4K,
-      locationTypes: locationTypes,
-      excludeLocationTypes: excludeLocationTypes,
-      isMissing: isMissing,
-      isUnaired: isUnaired,
-      minCommunityRating: minCommunityRating,
-      minCriticRating: minCriticRating,
-      minPremiereDate: minPremiereDate,
-      minDateLastSaved: minDateLastSaved,
-      minDateLastSavedForUser: minDateLastSavedForUser,
-      maxPremiereDate: maxPremiereDate,
-      hasOverview: hasOverview,
-      hasImdbId: hasImdbId,
-      hasTmdbId: hasTmdbId,
-      hasTvdbId: hasTvdbId,
-      isMovie: isMovie,
-      isSeries: isSeries,
-      isNews: isNews,
-      isKids: isKids,
-      isSports: isSports,
-      excludeItemIds: excludeItemIds,
-      startIndex: startIndex,
-      limit: limit,
-      recursive: recursive,
-      searchTerm: searchTerm,
-      sortOrder: sortOrder,
-      sortBy: sortBy,
-      parentId: parentId,
-      fields: {...?fields, ItemFields.candelete, ItemFields.candownload}.toList(),
-      excludeItemTypes: excludeItemTypes,
-      includeItemTypes: includeItemTypes,
-      filters: filters,
-      isFavorite: isFavorite,
-      mediaTypes: mediaTypes,
-      imageTypes: imageTypes,
-      isPlayed: isPlayed,
-      genres: genres,
-      officialRatings: officialRatings,
-      tags: tags,
-      years: years,
-      enableUserData: enableUserData,
-      imageTypeLimit: imageTypeLimit,
-      enableImageTypes: enableImageTypes,
-      person: person,
-      personIds: personIds,
-      personTypes: personTypes,
-      studios: studios,
-      artists: artists,
-      excludeArtistIds: excludeArtistIds,
-      artistIds: artistIds,
-      albumArtistIds: albumArtistIds,
-      contributingArtistIds: contributingArtistIds,
-      albums: albums,
-      albumIds: albumIds,
-      ids: ids,
-      videoTypes: videoTypes,
-      minOfficialRating: minOfficialRating,
-      isLocked: isLocked,
-      isPlaceHolder: isPlaceHolder,
-      hasOfficialRating: hasOfficialRating,
-      collapseBoxSetItems: collapseBoxSetItems,
-      minWidth: minWidth,
-      minHeight: minHeight,
-      maxWidth: maxWidth,
-      maxHeight: maxHeight,
-      is3D: is3D,
-      seriesStatus: seriesStatus,
-      nameStartsWithOrGreater: nameStartsWithOrGreater,
-      nameStartsWith: nameStartsWith,
-      nameLessThan: nameLessThan,
-      studioIds: studioIds,
-      genreIds: genreIds,
-      enableTotalRecordCount: enableTotalRecordCount,
-      enableImages: enableImages,
-    );
-
-    final isOffline = ref.read(connectivityStatusProvider.notifier).getConnectivityStates() == ConnectionState.offline;
-
-    if (isOffline) {
+    Response<ServerQueryResult> offlineResponse() {
       final syncedItems = ref.read(syncProvider).items.where((e) => e.parentId == parentId).toList();
-
       return Response(
-        http.Response("", 202),
+        http.Response('', 202),
         ServerQueryResult.fromBaseQuery(
           BaseItemDtoQueryResult(
             items: syncedItems.map((e) => e.data).nonNulls.toList(),
@@ -384,6 +293,104 @@ class JellyService {
           ref,
         ),
       );
+    }
+
+    if (ref.read(connectivityStatusProvider).isOffline) {
+      return offlineResponse();
+    }
+
+    late final Response<BaseItemDtoQueryResult> response;
+    try {
+      response = await api.usersUserIdItemsGet(
+        userId: account?.id,
+        maxOfficialRating: maxOfficialRating,
+        hasThemeSong: hasThemeSong,
+        hasThemeVideo: hasThemeVideo,
+        hasSubtitles: hasSubtitles,
+        hasSpecialFeature: hasSpecialFeature,
+        hasTrailer: hasTrailer,
+        adjacentTo: adjacentTo,
+        parentIndexNumber: parentIndexNumber,
+        hasParentalRating: hasParentalRating,
+        isHd: isHd,
+        is4K: is4K,
+        locationTypes: locationTypes,
+        excludeLocationTypes: excludeLocationTypes,
+        isMissing: isMissing,
+        isUnaired: isUnaired,
+        minCommunityRating: minCommunityRating,
+        minCriticRating: minCriticRating,
+        minPremiereDate: minPremiereDate,
+        minDateLastSaved: minDateLastSaved,
+        minDateLastSavedForUser: minDateLastSavedForUser,
+        maxPremiereDate: maxPremiereDate,
+        hasOverview: hasOverview,
+        hasImdbId: hasImdbId,
+        hasTmdbId: hasTmdbId,
+        hasTvdbId: hasTvdbId,
+        isMovie: isMovie,
+        isSeries: isSeries,
+        isNews: isNews,
+        isKids: isKids,
+        isSports: isSports,
+        excludeItemIds: excludeItemIds,
+        startIndex: startIndex,
+        limit: limit,
+        recursive: recursive,
+        searchTerm: searchTerm,
+        sortOrder: sortOrder,
+        sortBy: sortBy,
+        parentId: parentId,
+        fields: {...?fields, ItemFields.candelete, ItemFields.candownload}.toList(),
+        excludeItemTypes: excludeItemTypes,
+        includeItemTypes: includeItemTypes,
+        filters: filters,
+        isFavorite: isFavorite,
+        mediaTypes: mediaTypes,
+        imageTypes: imageTypes,
+        isPlayed: isPlayed,
+        genres: genres,
+        officialRatings: officialRatings,
+        tags: tags,
+        years: years,
+        enableUserData: enableUserData,
+        imageTypeLimit: imageTypeLimit,
+        enableImageTypes: enableImageTypes,
+        person: person,
+        personIds: personIds,
+        personTypes: personTypes,
+        studios: studios,
+        artists: artists,
+        excludeArtistIds: excludeArtistIds,
+        artistIds: artistIds,
+        albumArtistIds: albumArtistIds,
+        contributingArtistIds: contributingArtistIds,
+        albums: albums,
+        albumIds: albumIds,
+        ids: ids,
+        videoTypes: videoTypes,
+        minOfficialRating: minOfficialRating,
+        isLocked: isLocked,
+        isPlaceHolder: isPlaceHolder,
+        hasOfficialRating: hasOfficialRating,
+        collapseBoxSetItems: collapseBoxSetItems,
+        minWidth: minWidth,
+        minHeight: minHeight,
+        maxWidth: maxWidth,
+        maxHeight: maxHeight,
+        is3D: is3D,
+        seriesStatus: seriesStatus,
+        nameStartsWithOrGreater: nameStartsWithOrGreater,
+        nameStartsWith: nameStartsWith,
+        nameLessThan: nameLessThan,
+        studioIds: studioIds,
+        genreIds: genreIds,
+        enableTotalRecordCount: enableTotalRecordCount,
+        enableImages: enableImages,
+      );
+    } catch (error) {
+      if (isConnectionFailure(error)) return offlineResponse();
+      rethrow;
     }
 
     final forceShuffle = searchTerm?.isNotEmpty == true && sortBy?.contains(ItemSortBy.random) == true;
@@ -738,7 +745,7 @@ class JellyService {
       }
     }
 
-    final isoffline = ref.read(connectivityStatusProvider.notifier).getConnectivityStates() == ConnectionState.offline;
+    final isoffline = ref.read(connectivityStatusProvider).isOffline;
 
     if (isoffline) {
       return fetchOfflineEpisodes();
@@ -797,7 +804,7 @@ class JellyService {
       );
     }
 
-    final isOffline = ref.read(connectivityStatusProvider.notifier).getConnectivityStates() == ConnectionState.offline;
+    final isOffline = ref.read(connectivityStatusProvider).isOffline;
 
     if (isOffline) {
       return fetchSimilarGet();
@@ -1085,7 +1092,7 @@ class JellyService {
       }
     }
 
-    final isOffline = ref.read(connectivityStatusProvider.notifier).getConnectivityStates() == ConnectionState.offline;
+    final isOffline = ref.read(connectivityStatusProvider).isOffline;
     if (isOffline) {
       return fetchOfflineSeasons();
     }

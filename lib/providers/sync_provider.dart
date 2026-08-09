@@ -119,7 +119,7 @@ class SyncNotifier extends StateNotifier<SyncSettingsModel> {
     );
 
     ref.listen(connectivityStatusProvider, (_, next) {
-      if (next != ConnectionState.offline) {
+      if (!next.isOffline) {
         updateSyncStates();
       }
     });

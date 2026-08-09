@@ -78,10 +78,9 @@ class SeerrRequest implements Interceptor {
 
     try {
       final response = await chain.proceed(requestWithHeaders);
-      connectivityNotifier.checkConnectivity();
+      connectivityNotifier.refresh();
       return response;
     } catch (e, st) {
-      connectivityNotifier.onStateChange([]);
       throw HttpException(
         'Seerr API request failed: ${chain.request.method} $resolvedRequestUri\nError: $e\n$st',
       );

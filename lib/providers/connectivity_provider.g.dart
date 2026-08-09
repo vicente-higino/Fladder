@@ -6,11 +6,11 @@ part of 'connectivity_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$connectivityStatusHash() => r'f3413ed871e4915babfa5e720a6d8925e527c38d';
+String _$connectivityStatusHash() => r'ce838ee6e0e2aa71f6de35eefc22f2ceba2983a5';
 
 /// See also [ConnectivityStatus].
 @ProviderFor(ConnectivityStatus)
-final connectivityStatusProvider = NotifierProvider<ConnectivityStatus, ConnectionState>.internal(
+final connectivityStatusProvider = NotifierProvider<ConnectivityStatus, ConnectivitySnapshot>.internal(
   ConnectivityStatus.new,
   name: r'connectivityStatusProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product') ? null : _$connectivityStatusHash,
@@ -18,6 +18,6 @@ final connectivityStatusProvider = NotifierProvider<ConnectivityStatus, Connecti
   allTransitiveDependencies: null,
 );
 
-typedef _$ConnectivityStatus = Notifier<ConnectionState>;
+typedef _$ConnectivityStatus = Notifier<ConnectivitySnapshot>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

@@ -37,7 +37,7 @@ class _PlatformAppWrapperState extends ConsumerState<PlatformAppWrapper> with Wi
     switch (state) {
       case AppLifecycleState.resumed:
         // Safety check to ensure connectivity status is up to date when the app is resumed
-        ref.read(connectivityStatusProvider.notifier).checkConnectivity();
+        ref.read(connectivityStatusProvider.notifier).refresh();
       default:
         break;
     }

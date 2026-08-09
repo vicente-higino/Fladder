@@ -33,7 +33,7 @@ class SyncedChildren extends _$SyncedChildren {
   FutureOr<List<SyncedItem>> build(SyncedItem item) async {
     final syncNotifier = ref.read(syncProvider.notifier);
     final localChildren = await syncNotifier.getChildrenForItem(item);
-    final isOnline = ref.watch(connectivityStatusProvider.select((value) => value != ConnectionState.offline));
+    final isOnline = ref.watch(connectivityStatusProvider.select((value) => !value.isOffline));
     if (!isOnline) {
       return localChildren;
     }

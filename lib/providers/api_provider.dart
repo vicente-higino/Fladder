@@ -3,7 +3,6 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:chopper/chopper.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:punycoder/punycoder.dart';
@@ -77,10 +76,6 @@ class _TempJellyRequest implements Interceptor {
 
 final int _maxRetries = 3;
 
-bool _isConnectionError(Object e) {
-  return e is IOException || e is TimeoutException;
-}
-
 class JellyRequest implements Interceptor {
   JellyRequest(this.ref);
 
@@ -113,11 +108,15 @@ class JellyRequest implements Interceptor {
           ),
         );
 
-        unawaited(connectivityNotifier.checkConnectivity());
+        connectivityNotifier.reportRequestSuccess(serverUrl);
         return response;
       } catch (e) {
-        if (!_isConnectionError(e) || attempt == _maxRetries) {
-          connectivityNotifier.onStateChange([ConnectivityResult.none]);
+        if (!isConnectionFailure(e)) {
+          rethrow;
+        }
+
+        if (attempt == _maxRetries) {
+          connectivityNotifier.reportRequestFailure(serverUrl, e);
           rethrow;
         }
 
