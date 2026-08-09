@@ -8,6 +8,15 @@ import 'package:chopper/chopper.dart';
 import 'package:fladder/jellyfin/jellyfin_open_api.swagger.dart';
 import 'package:fladder/util/localization_helper.dart';
 
+const Map<String, Set<String>> regionalLanguageAliases = {
+  'pt-br': {'pt-br', 'pob'},
+  'pt-pt': {'pt-pt', 'pop'},
+  'zh-tw': {'zh-tw'},
+  'zh-hk': {'zh-hk'},
+  'fr-ca': {'fr-ca', 'frc'},
+  'es-mx': {'es-mx', 'es-419'},
+};
+
 extension JellyApiExtension on JellyfinOpenApi {
   Future<Response<dynamic>?> itemIdImagesImageTypePost(
     ImageType type,
@@ -56,13 +65,44 @@ extension SubtitlePlaybackModeExtension on SubtitlePlaybackMode? {
 }
 
 extension CultureDtoExtension on CultureDto {
-  bool matchesLanguageCode(String? languageCode) {
-    if (languageCode == null || languageCode.isEmpty) return false;
-    final code = languageCode.toLowerCase();
-    final threeLetterCode = threeLetterISOLanguageName?.toLowerCase();
-    final twoLetterCode = twoLetterISOLanguageName?.toLowerCase();
-    if (code == threeLetterCode) return true;
-    if (code == twoLetterCode) return true;
-    return threeLetterISOLanguageNames?.any((v) => v.toLowerCase() == code) ?? false;
+  Set<String> get isoLanguageCodes => {
+        normalizeLanguageCode(twoLetterISOLanguageName),
+        normalizeLanguageCode(threeLetterISOLanguageName),
+        ...?threeLetterISOLanguageNames?.map(normalizeLanguageCode),
+      }.where((code) => code.isNotEmpty).toSet();
+
+  String? get regionalLanguageCode {
+    final code = normalizeLanguageCode(twoLetterISOLanguageName);
+    return code.contains('-') ? code : null;
   }
+
+  String? get preferredSubtitleLanguageCode =>
+      regionalLanguageCode ??
+      normalizeLanguageCode(threeLetterISOLanguageName).nullIfEmpty ??
+      normalizeLanguageCode(twoLetterISOLanguageName).nullIfEmpty;
+
+  bool matchesLanguageCode(String? languageCode) {
+    final code = normalizeLanguageCode(languageCode);
+    if (code.isEmpty) return false;
+    final region = regionalLanguageCode;
+    if (region != null && resolveRegionalLanguageCode(code) == resolveRegionalLanguageCode(region)) return true;
+    if (isoLanguageCodes.contains(code)) return true;
+    return code == normalizeLanguageCode(name) || code == normalizeLanguageCode(displayName);
+  }
+}
+
+String normalizeLanguageCode(String? languageCode) => languageCode?.trim().toLowerCase().replaceAll('_', '-') ?? '';
+
+String? resolveRegionalLanguageCode(String? languageCode) {
+  final code = normalizeLanguageCode(languageCode);
+  if (code.isEmpty) return null;
+
+  for (final entry in regionalLanguageAliases.entries) {
+    if (entry.value.contains(code)) return entry.key;
+  }
+  return null;
+}
+
+extension on String {
+  String? get nullIfEmpty => isEmpty ? null : this;
 }

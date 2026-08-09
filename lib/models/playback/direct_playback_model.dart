@@ -65,9 +65,9 @@ class DirectPlaybackModel extends PlaybackModel {
           body: PlaybackStartInfo(
             canSeek: true,
             itemId: item.id,
-            mediaSourceId: item.id,
+            mediaSourceId: mediaStreams?.currentVersionStream?.id ?? item.id,
             playSessionId: playbackInfo?.playSessionId,
-            subtitleStreamIndex: item.streamModel?.defaultSubStreamIndex,
+            subtitleStreamIndex: mediaStreams?.defaultSubStreamIndex,
             audioStreamIndex: item.streamModel?.defaultAudioStreamIndex,
             volumeLevel: 100,
             playbackStartTimeTicks: position.toRuntimeTicks,
@@ -103,9 +103,9 @@ class DirectPlaybackModel extends PlaybackModel {
       body: PlaybackProgressInfo(
         canSeek: true,
         itemId: item.id,
-        mediaSourceId: item.id,
+        mediaSourceId: mediaStreams?.currentVersionStream?.id ?? item.id,
         playSessionId: playbackInfo?.playSessionId,
-        subtitleStreamIndex: item.streamModel?.defaultSubStreamIndex,
+        subtitleStreamIndex: mediaStreams?.defaultSubStreamIndex,
         audioStreamIndex: item.streamModel?.defaultAudioStreamIndex,
         volumeLevel: 100,
         playMethod: PlayMethod.directplay,

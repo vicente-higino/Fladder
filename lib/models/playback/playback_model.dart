@@ -384,16 +384,20 @@ class PlaybackModelHelper {
           newStreamModel?.audioStreams,
           newStreamModel?.defaultAudioStreamIndex);
 
-      final subStreamIndex = selectSubStream(
-          ref.read(userProvider.select((value) => value?.userConfiguration?.rememberSubtitleSelections ?? true)),
-          oldModel?.mediaStreams?.currentSubStream,
-          newStreamModel?.subStreams,
-          newStreamModel?.defaultSubStreamIndex);
+      final userConfiguration = ref.read(userProvider)?.userConfiguration;
+      final regionalSubStreamIndex = refineRegionalSubtitleSelection(
+        preferredLanguage: userConfiguration?.subtitleLanguagePreference,
+        streams: newStreamModel?.subStreams,
+        defaultStreamIndex: newStreamModel?.defaultSubStreamIndex,
+      );
+      final subStreamIndex = selectSubStream(userConfiguration?.rememberSubtitleSelections ?? true,
+          oldModel?.mediaStreams?.currentSubStream, newStreamModel?.subStreams, regionalSubStreamIndex);
 
 //Native player does not allow for loading external subtitles with transcoding
       final isNativePlayer =
           ref.read(videoPlayerSettingsProvider.select((value) => value.wantedPlayer == PlayerOptions.nativePlayer));
-      final isExternalSub = newStreamModel?.currentSubStream?.isExternal == true;
+      final isExternalSub =
+          newStreamModel?.subStreams.firstWhereOrNull((stream) => stream.index == subStreamIndex)?.isExternal == true;
 
       final Response<PlaybackInfoResponse> response = await api.itemsItemIdPlaybackInfoPost(
         itemId: item.id,
@@ -547,7 +551,10 @@ class PlaybackModelHelper {
     return Response(response.base, (response.body?.items?.map((e) => EpisodeModel.fromBaseDto(e, ref)).toList() ?? []));
   }
 
-  Future<void> shouldReload(PlaybackModel playbackModel) async {
+  Future<void> shouldReload(
+    PlaybackModel playbackModel, {
+    bool persistSubtitleSelection = false,
+  }) async {
     if (playbackModel is OfflinePlaybackModel) {
       return;
     }
@@ -558,6 +565,15 @@ class PlaybackModelHelper {
     if (userId?.isEmpty == true) return;
 
     final currentPosition = ref.read(mediaPlaybackProvider.select((value) => value.position));
+
+    if (persistSubtitleSelection) {
+      try {
+        final isPlaying = ref.read(mediaPlaybackProvider.select((value) => value.playing));
+        await playbackModel.updatePlaybackPosition(currentPosition, isPlaying, ref);
+      } catch (error, stackTrace) {
+        log('Failed to persist subtitle selection. Error: $error\n$stackTrace');
+      }
+    }
 
     final audioIndex = selectAudioStream(
         ref.read(userProvider.select((value) => value?.userConfiguration?.rememberAudioSelections ?? true)),

@@ -196,8 +196,9 @@ class _UserSettingsPageState extends ConsumerState<ProfileSettingsPage> with Wid
                       selected: e.matchesLanguageCode(subtitleLanguagePreference),
                       label: Text(e.displayName ?? e.name ?? context.localized.unknown),
                       action: () {
-                        ref.read(userProvider.notifier).updateSubtitleLanguagePreference(
-                            e.threeLetterISOLanguageName?.toLowerCase() ?? e.twoLetterISOLanguageName?.toLowerCase());
+                        ref
+                            .read(userProvider.notifier)
+                            .updateSubtitleLanguagePreference(e.preferredSubtitleLanguageCode);
                       },
                     ),
                   ),

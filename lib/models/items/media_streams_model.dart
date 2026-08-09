@@ -362,6 +362,8 @@ class SubStreamModel extends AudioAndSubStreamModel {
   String title;
   String? url;
   bool supportsExternalStream;
+  bool isForced;
+  int? score;
   SubStreamModel({
     required super.name,
     required this.id,
@@ -374,6 +376,8 @@ class SubStreamModel extends AudioAndSubStreamModel {
     required super.isExternal,
     required super.index,
     this.supportsExternalStream = false,
+    this.isForced = false,
+    this.score,
   });
 
   SubStreamModel.no({
@@ -388,6 +392,8 @@ class SubStreamModel extends AudioAndSubStreamModel {
     super.isExternal = false,
     super.index = -1,
     this.supportsExternalStream = false,
+    this.isForced = false,
+    this.score,
   });
 
   String label(BuildContext context) {
@@ -423,6 +429,8 @@ class SubStreamModel extends AudioAndSubStreamModel {
       codec: stream.codec ?? "",
       id: stream.hashCode.toString(),
       supportsExternalStream: stream.supportsExternalStream ?? false,
+      isForced: stream.isForced ?? false,
+      score: stream.score,
       url: subStreamUrl,
       isExternal: stream.isExternal ?? false,
       index: stream.index ?? -1,
@@ -441,6 +449,8 @@ class SubStreamModel extends AudioAndSubStreamModel {
     bool? isExternal,
     int? index,
     bool? supportsExternalStream,
+    bool? isForced,
+    ValueGetter<int?>? score,
   }) {
     return SubStreamModel(
       name: name ?? this.name,
@@ -454,6 +464,8 @@ class SubStreamModel extends AudioAndSubStreamModel {
       isDefault: isDefault ?? this.isDefault,
       isExternal: isExternal ?? this.isExternal,
       index: index ?? this.index,
+      isForced: isForced ?? this.isForced,
+      score: score != null ? score() : this.score,
     );
   }
 
@@ -470,6 +482,8 @@ class SubStreamModel extends AudioAndSubStreamModel {
       'isExternal': isExternal,
       'isDefault': isDefault,
       'index': index,
+      'isForced': isForced,
+      'score': score,
     };
   }
 
@@ -486,6 +500,8 @@ class SubStreamModel extends AudioAndSubStreamModel {
       isDefault: map['isDefault'] ?? false,
       isExternal: map['isExternal'] ?? false,
       index: map['index'] ?? -1,
+      isForced: map['isForced'] ?? false,
+      score: map['score'],
     );
   }
 
