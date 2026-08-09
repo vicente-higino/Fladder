@@ -255,9 +255,8 @@ void Win32Window::SetChildContent(HWND content) {
   MoveWindow(content, frame.left, frame.top, frame.right - frame.left,
              frame.bottom - frame.top, true);
 
-  // An external window manager can show the parent while Flutter is still
-  // creating its child view. Keep the child explicitly visible so the
-  // responsive top-level window cannot become visually blank.
+  // Keep the hosted Flutter surface visible even if an external window
+  // manager shows or resizes the parent during first-frame attachment.
   ShowWindow(content, SW_SHOW);
   SetFocus(child_content_);
 }
