@@ -6,6 +6,86 @@ import 'package:fladder/util/jellyfin_extension.dart';
 import 'package:fladder/util/streams_selection.dart';
 
 void main() {
+  group('Always subtitle selection', () {
+    test('enables the best regional candidate when Jellyfin returned null', () {
+      final streams = [
+        sub(31, language: 'por', title: ''),
+        sub(32, language: 'por', title: 'Brazilian'),
+      ];
+
+      expect(
+        selectRegionalSubtitleForAlways(
+          alwaysPlaySubtitles: true,
+          preferredLanguage: 'pt-br',
+          streams: streams,
+          defaultStreamIndex: null,
+        ),
+        32,
+      );
+    });
+
+    test('preserves remembered Off and non-Always modes', () {
+      final streams = [sub(32, language: 'por', title: 'Brazilian')];
+
+      expect(
+        selectRegionalSubtitleForAlways(
+          alwaysPlaySubtitles: true,
+          preferredLanguage: 'pt-br',
+          streams: streams,
+          defaultStreamIndex: -1,
+        ),
+        -1,
+      );
+      expect(
+        selectRegionalSubtitleForAlways(
+          alwaysPlaySubtitles: false,
+          preferredLanguage: 'pt-br',
+          streams: streams,
+          defaultStreamIndex: null,
+        ),
+        isNull,
+      );
+    });
+
+    test('does not enable unrelated candidates and uses a forced fallback', () {
+      final unrelated = [sub(1, language: 'eng', title: 'English')];
+      final forced = [sub(2, language: 'por', title: 'Brazilian', isForced: true)];
+
+      expect(
+        selectRegionalSubtitleForAlways(
+          alwaysPlaySubtitles: true,
+          preferredLanguage: 'pt-br',
+          streams: unrelated,
+          defaultStreamIndex: null,
+        ),
+        isNull,
+      );
+      expect(
+        selectRegionalSubtitleForAlways(
+          alwaysPlaySubtitles: true,
+          preferredLanguage: 'pt-br',
+          streams: forced,
+          defaultStreamIndex: null,
+        ),
+        2,
+      );
+    });
+
+    test('does not enable a candidate identified as another region', () {
+      final streams = [sub(30, language: 'por', title: 'Português (Portugal)')];
+
+      expect(
+        selectRegionalSubtitleForAlways(
+          alwaysPlaySubtitles: true,
+          preferredLanguage: 'pt-br',
+          streams: streams,
+          defaultStreamIndex: null,
+        ),
+        isNull,
+      );
+    });
+  });
+
   group('regional subtitle selection', () {
     test('selects Brazilian Portuguese by title when both tracks use por', () {
       final streams = [

@@ -385,10 +385,16 @@ class PlaybackModelHelper {
           newStreamModel?.defaultAudioStreamIndex);
 
       final userConfiguration = ref.read(userProvider)?.userConfiguration;
-      final regionalSubStreamIndex = refineRegionalSubtitleSelection(
+      final enabledSubStreamIndex = selectRegionalSubtitleForAlways(
+        alwaysPlaySubtitles: userConfiguration?.subtitleMode == SubtitlePlaybackMode.always,
         preferredLanguage: userConfiguration?.subtitleLanguagePreference,
         streams: newStreamModel?.subStreams,
         defaultStreamIndex: newStreamModel?.defaultSubStreamIndex,
+      );
+      final regionalSubStreamIndex = refineRegionalSubtitleSelection(
+        preferredLanguage: userConfiguration?.subtitleLanguagePreference,
+        streams: newStreamModel?.subStreams,
+        defaultStreamIndex: enabledSubStreamIndex,
       );
       final subStreamIndex = selectSubStream(userConfiguration?.rememberSubtitleSelections ?? true,
           oldModel?.mediaStreams?.currentSubStream, newStreamModel?.subStreams, regionalSubStreamIndex);

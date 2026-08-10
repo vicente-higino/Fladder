@@ -87,6 +87,60 @@ int? selectSubStream(
   );
 }
 
+/// Enables the best regional subtitle only when Jellyfin's Always mode
+/// produced no selection, preferring full subtitles before forced subtitles.
+/// A remembered Off is represented by `-1` and is intentionally preserved.
+int? selectRegionalSubtitleForAlways({
+  required bool alwaysPlaySubtitles,
+  required String? preferredLanguage,
+  required List<SubStreamModel>? streams,
+  required int? defaultStreamIndex,
+}) {
+  if (!alwaysPlaySubtitles || defaultStreamIndex != null || streams == null || streams.isEmpty) {
+    return defaultStreamIndex;
+  }
+
+  final regionalCode = resolveRegionalLanguageCode(preferredLanguage);
+  if (regionalCode == null) return defaultStreamIndex;
+
+  final familyCodes = _regionalLanguageFamilyCodes[regionalCode]!;
+  final fullSubtitle = _bestRegionalCandidate(
+    streams.where((stream) => !stream.isForced),
+    regionalCode,
+    familyCodes,
+  );
+  final forcedSubtitle = _bestRegionalCandidate(
+    streams.where((stream) => stream.isForced),
+    regionalCode,
+    familyCodes,
+  );
+
+  return fullSubtitle?.index ?? forcedSubtitle?.index ?? defaultStreamIndex;
+}
+
+SubStreamModel? _bestRegionalCandidate(
+  Iterable<SubStreamModel> streams,
+  String regionalCode,
+  Set<String> familyCodes,
+) {
+  SubStreamModel? bestStream;
+  var bestRank = 0;
+
+  for (final stream in streams) {
+    if (!familyCodes.contains(normalizeLanguageCode(stream.language))) continue;
+    final identifiedRegion = _identifiedRegion(stream);
+    if (identifiedRegion != null && identifiedRegion != regionalCode) continue;
+
+    final rank = _regionalMatchRank(stream, regionalCode, familyCodes);
+    if (rank > bestRank) {
+      bestRank = rank;
+      bestStream = stream;
+    }
+  }
+
+  return bestStream;
+}
+
 /// Refines an already-enabled Jellyfin subtitle selection when the preferred
 /// culture is regional but the media uses a generic language code.
 ///
