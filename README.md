@@ -1,7 +1,7 @@
 
 <h1 align="center">
   <br>
-    <a href="https://github.com/DonutWare/Fladder"><img src="https://raw.githubusercontent.com/DonutWare/Fladder/refs/heads/develop/icons/production/fladder_macos_icon.png" alt="Fladder" width="200"></a>
+    <a href="https://github.com/vicente-higino/Fladder"><img src="https://raw.githubusercontent.com/DonutWare/Fladder/refs/heads/develop/icons/production/fladder_macos_icon.png" alt="Fladder" width="200"></a>
   <br>
   Fladder
   <br>
@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="#key-features">Key Features</a> •
+  <a href="#fork-release-highlights">Fork Highlights</a> •
   <a href="#screenshots">Screenshots</a> •
   <a href="#planned-features">Planned Features</a> •
   <a href="#download">Download</a> •
@@ -21,12 +22,31 @@
 
 <div align="center">
   
-  [![Build](https://github.com/DonutWare/Fladder/actions/workflows/build.yml/badge.svg?branch=develop)](https://github.com/DonutWare/Fladder/actions/workflows/build.yml)
-  [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/DonutWare/fladder/total)](https://github.com/DonutWare/Fladder/releases/latest)
-  [![GitHub Release](https://img.shields.io/github/v/release/DonutWare/fladder?display_name=tag)](https://github.com/DonutWare/Fladder/releases/latest)
+  [![Build](https://github.com/vicente-higino/Fladder/actions/workflows/build.yml/badge.svg?branch=develop)](https://github.com/vicente-higino/Fladder/actions/workflows/build.yml)
+  [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/vicente-higino/Fladder/total)](https://github.com/vicente-higino/Fladder/releases/latest)
+  [![GitHub Release](https://img.shields.io/github/v/release/vicente-higino/Fladder?display_name=tag)](https://github.com/vicente-higino/Fladder/releases/latest)
   [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
   
 </div>
+
+> [!NOTE]
+> This fork tracks the original [DonutWare/Fladder](https://github.com/DonutWare/Fladder) project and publishes
+> additional fixes and playback improvements that are not part of the upstream release.
+
+## Fork Release Highlights
+
+This fork includes the following additions on top of Fladder 0.10.3:
+
+* Configurable default playback speed, with an option to remember the last speed used across sessions
+* Localized playback-speed settings and descriptions across all bundled languages
+* Live refresh of delayed Jellyfin media segments, so intro, outro and credit markers can appear during playback
+* Reliable preservation of manually selected regional subtitle tracks
+* Correct handling of regional subtitles when subtitle mode is set to **Always**
+* Automatic recovery when a local Jellyfin server temporarily goes offline and comes back
+* Safer single-flight initialization for services, player state and Windows startup
+* Windows stability fixes for startup freezes, delayed window restoration, resizing and player initialization
+
+Download the maintained fork builds from the [fork releases page](https://github.com/vicente-higino/Fladder/releases).
 
 
 
@@ -107,7 +127,10 @@ Web/Desktop [try out the web build!](https://DonutWare.github.io/Fladder)
 
 ## Download
 
-The latest executables for Windows, macOS, Linux, iOS, Android and Web can be found on the [releases page](https://github.com/DonutWare/Fladder/releases).
+The latest executables maintained by this fork can be found on the [fork releases page](https://github.com/vicente-higino/Fladder/releases).
+
+Official upstream builds for Windows, macOS, Linux, iOS, Android and Web remain available on the
+[DonutWare releases page](https://github.com/DonutWare/Fladder/releases).
 
 You can pull the Docker version using the following tags: ```ghcr.io/donutware/fladder:latest```. or ```ghcr.io/donutware/fladder-rootless:latest```
 
