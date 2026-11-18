@@ -6,18 +6,58 @@ part of 'connectivity_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$connectivityStatusHash() => r'ce838ee6e0e2aa71f6de35eefc22f2ceba2983a5';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [ConnectivityStatus].
 @ProviderFor(ConnectivityStatus)
-final connectivityStatusProvider = NotifierProvider<ConnectivityStatus, ConnectivitySnapshot>.internal(
-  ConnectivityStatus.new,
-  name: r'connectivityStatusProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product') ? null : _$connectivityStatusHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+final connectivityStatusProvider = ConnectivityStatusProvider._();
 
-typedef _$ConnectivityStatus = Notifier<ConnectivitySnapshot>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+final class ConnectivityStatusProvider
+    extends $NotifierProvider<ConnectivityStatus, ConnectivitySnapshot> {
+  ConnectivityStatusProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'connectivityStatusProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$connectivityStatusHash();
+
+  @$internal
+  @override
+  ConnectivityStatus create() => ConnectivityStatus();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ConnectivitySnapshot value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ConnectivitySnapshot>(value),
+    );
+  }
+}
+
+String _$connectivityStatusHash() =>
+    r'0dc015f8204f88d39f0d56ff147cb82d6acad17b';
+
+abstract class _$ConnectivityStatus extends $Notifier<ConnectivitySnapshot> {
+  ConnectivitySnapshot build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<ConnectivitySnapshot, ConnectivitySnapshot>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<ConnectivitySnapshot, ConnectivitySnapshot>,
+              ConnectivitySnapshot,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}

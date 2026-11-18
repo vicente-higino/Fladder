@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:fladder/jellyfin/jellyfin_open_api.enums.swagger.dart' as jelly;
 import 'package:fladder/models/item_base_model.dart';
 import 'package:fladder/screens/details_screens/components/overview_header.dart';
 import 'package:fladder/screens/shared/media/poster_row.dart';
@@ -10,7 +11,6 @@ import 'package:fladder/util/fladder_image.dart';
 import 'package:fladder/util/focus_provider.dart';
 import 'package:fladder/util/localization_helper.dart';
 import 'package:fladder/widgets/shared/custom_shader_mask.dart';
-import 'package:fladder/widgets/shared/ensure_visible.dart';
 
 class DetailedBanner extends ConsumerStatefulWidget {
   final List<ItemBaseModel> posters;
@@ -106,23 +106,23 @@ class _DetailedBannerState extends ConsumerState<DetailedBanner> {
                   ),
                 ),
               ),
-              Builder(builder: (context) {
-                return FocusProvider(
-                  autoFocus: true,
-                  child: PosterRow(
-                    primaryPosters: true,
-                    label: context.localized.nextUp,
-                    posters: widget.posters,
-                    onFocused: (poster) {
-                      context.ensureVisible(
-                        alignment: 10.0,
-                      );
-                      selectedPoster.value = poster;
-                      widget.onSelect(poster);
-                    },
-                  ),
-                );
-              }),
+              FocusProvider(
+                autoFocus: true,
+                child: PosterRow(
+                  imagePriority: const [
+                    jelly.ImageType.thumb,
+                    jelly.ImageType.backdrop,
+                    jelly.ImageType.primary,
+                  ],
+                  label: context.localized.nextUp,
+                  posters: widget.posters,
+                  revealAlignment: 10.0,
+                  onFocused: (poster) {
+                    selectedPoster.value = poster;
+                    widget.onSelect(poster);
+                  },
+                ),
+              ),
               const SizedBox(height: 16)
             ],
           ),

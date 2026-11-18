@@ -1,11 +1,12 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import 'package:fladder/jellyfin/jellyfin_open_api.enums.swagger.dart' as jelly;
 import 'package:fladder/models/collection_types.dart';
 import 'package:fladder/models/library_filter_model.dart';
 import 'package:fladder/models/recommended_model.dart';
@@ -72,6 +73,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> with SingleTicker
       ),
       body: PullToRefresh(
         refreshOnStart: true,
+        contextRefresh: false,
         refreshKey: refreshKey,
         onRefresh: () async {
           if (refreshing) return;
@@ -173,7 +175,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> with SingleTicker
                             tvMode: useTVExpandedLayout,
                             contentPadding: padding,
                             posters: element.posters,
-                            primaryPosters: element.name is Continue,
+                            collectionAspectRatio: element.name is Continue ? 1.2 : null,
+                            imagePriority: element.name is Continue
+                                ? const [jelly.ImageType.thumb, jelly.ImageType.backdrop, jelly.ImageType.primary]
+                                : null,
                             label: element.type != null
                                 ? "${element.type?.label(context.localized)} - ${element.name.label(context.localized)}"
                                 : element.name.label(context.localized),

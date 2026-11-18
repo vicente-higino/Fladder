@@ -24,6 +24,8 @@ class PlayerSettings {
   final VideoPlayerFit videoFit;
   final Screensaver screensaver;
   final double playbackRate;
+  final bool refreshRateSwitching;
+  final bool lowResourceMode;
 
   const PlayerSettings({
     required this.enableTunneling,
@@ -37,6 +39,8 @@ class PlayerSettings {
     required this.videoFit,
     required this.screensaver,
     required this.playbackRate,
+    required this.refreshRateSwitching,
+    required this.lowResourceMode,
   });
 }
 

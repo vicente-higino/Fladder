@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +10,7 @@ import 'package:fladder/providers/user_provider.dart';
 import 'package:fladder/routes/auto_router.gr.dart';
 import 'package:fladder/screens/shared/fladder_logo.dart';
 import 'package:fladder/screens/shared/route_wrapper.dart';
+import 'package:fladder/services/local_network_permission.dart';
 
 @RoutePage()
 class SplashScreen extends ConsumerStatefulWidget {
@@ -33,6 +34,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         if (lastUsedAccount == null || ref.read(argumentsStateProvider).newWindow == true) {
           callBackOrNavigate(false);
         } else {
+          !await ensureLocalNetworkPermissions(
+            [lastUsedAccount.credentials.url, lastUsedAccount.credentials.localUrl],
+            context,
+          );
+
           switch (lastUsedAccount.authMethod) {
             case Authentication.autoLogin:
               callBackOrNavigate(true);
@@ -40,6 +46,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             case Authentication.biometrics:
             case Authentication.none:
             case Authentication.passcode:
+            case Authentication.pattern:
               callBackOrNavigate(false);
               break;
           }

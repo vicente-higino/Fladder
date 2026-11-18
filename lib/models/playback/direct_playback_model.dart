@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/widgets.dart' hide RepeatMode;
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,7 +70,8 @@ class DirectPlaybackModel extends PlaybackModel {
             subtitleStreamIndex: mediaStreams?.defaultSubStreamIndex,
             audioStreamIndex: item.streamModel?.defaultAudioStreamIndex,
             volumeLevel: 100,
-            playbackStartTimeTicks: position.toRuntimeTicks,
+            positionTicks: position.toRuntimeTicks,
+            playbackStartTimeTicks: DateTime.now().millisecondsSinceEpoch * 10000,
             playMethod: PlayMethod.directplay,
             isMuted: false,
             isPaused: false,

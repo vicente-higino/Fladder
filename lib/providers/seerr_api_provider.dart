@@ -5,25 +5,25 @@ import 'package:chopper/chopper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import 'package:fladder/providers/connectivity_provider.dart';
 import 'package:fladder/providers/seerr_service_provider.dart';
 import 'package:fladder/providers/user_provider.dart';
 import 'package:fladder/seerr/seerr_chopper_service.dart';
 import 'package:fladder/seerr/seerr_json_converter.dart';
 import 'package:fladder/util/fladder_config.dart';
 import 'package:fladder/util/seerr_http_client.dart'
-    if (dart.library.html) 'package:fladder/util/seerr_http_client_web.dart';
+    if (dart.library.js_interop) 'package:fladder/util/seerr_http_client_web.dart';
 
 part 'seerr_api_provider.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 class SeerrApi extends _$SeerrApi {
   @override
   SeerrService build() {
     ref.watch(userProvider.select((u) => u?.seerrCredentials));
 
+    final httpClient = createSeerrHttpClient();
     final chopperClient = ChopperClient(
-      client: createSeerrHttpClient(),
+      client: httpClient,
       converter: const SeerrJsonConverter(),
       interceptors: [
         SeerrRequest(ref),
@@ -31,6 +31,11 @@ class SeerrApi extends _$SeerrApi {
         HttpLoggingInterceptor(level: Level.basic),
       ],
     );
+
+    ref.onDispose(() {
+      chopperClient.dispose();
+      httpClient.close();
+    });
 
     return SeerrService(
       ref,
@@ -46,7 +51,6 @@ class SeerrRequest implements Interceptor {
 
   @override
   FutureOr<Response<BodyType>> intercept<BodyType>(Chain<BodyType> chain) async {
-    final connectivityNotifier = ref.read(connectivityStatusProvider.notifier);
     final creds = ref.read(userProvider)?.seerrCredentials;
     final serverUrl = (FladderConfig.seerrBaseUrl ?? creds?.serverUrl)?.trim();
 
@@ -78,7 +82,6 @@ class SeerrRequest implements Interceptor {
 
     try {
       final response = await chain.proceed(requestWithHeaders);
-      connectivityNotifier.refresh();
       return response;
     } catch (e, st) {
       throw HttpException(

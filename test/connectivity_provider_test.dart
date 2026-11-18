@@ -194,7 +194,7 @@ AccountModel _account({String url = 'http://192.168.1.100:8096'}) {
     id: 'user-id',
     avatar: '',
     lastUsed: DateTime(2026),
-    credentials: CredentialsModel.internal(
+    credentials: CredentialsModel(
       token: 'token',
       url: url,
       serverName: 'Test Server',

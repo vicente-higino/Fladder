@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:fladder/models/items/images_models.dart';
+import 'package:fladder/jellyfin/jellyfin_open_api.enums.swagger.dart' as jelly;
+import 'package:material_ui/material_ui.dart';
 
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 
 import 'package:fladder/models/item_base_model.dart';
 import 'package:fladder/models/items/item_shared_models.dart';
+import 'package:fladder/providers/pending_items_provider.dart';
 import 'package:fladder/providers/settings/client_settings_provider.dart';
 import 'package:fladder/providers/sync/sync_provider_helpers.dart';
 import 'package:fladder/screens/shared/media/components/poster_overlays.dart';
@@ -35,7 +38,7 @@ class PosterImage extends ConsumerWidget {
   final Function(ItemBaseModel newItem)? onItemUpdated;
   final Function(ItemBaseModel oldItem)? onItemRemoved;
   final Function(Function() action, ItemBaseModel item)? onPressed;
-  final bool primaryPosters;
+  final List<jelly.ImageType>? imagePriority;
   final Function(bool focus)? onFocusChanged;
   final bool showSyncStatus;
 
@@ -50,17 +53,39 @@ class PosterImage extends ConsumerWidget {
     this.otherActions = const [],
     this.onPressed,
     this.onUserDataChanged,
-    this.primaryPosters = false,
+    this.imagePriority,
     this.onFocusChanged,
     this.showSyncStatus = false,
     super.key,
   });
+
+  ImageData? _resolveImage() {
+    final source = poster.getPosters;
+    final fallback = poster.images;
+
+    final effectivePriority =
+        imagePriority ?? const [jelly.ImageType.primary, jelly.ImageType.thumb, jelly.ImageType.backdrop];
+
+    for (final type in effectivePriority) {
+      final image = switch (type) {
+        jelly.ImageType.primary => source?.primary ?? fallback?.primary,
+        jelly.ImageType.thumb => source?.thumb ?? fallback?.thumb ?? fallback?.primary,
+        jelly.ImageType.backdrop => source?.backDrop?.lastOrNull ?? fallback?.backDrop?.lastOrNull,
+        _ => null,
+      };
+
+      if (image != null) return image;
+    }
+
+    return null;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final radius = FladderTheme.smallShape.borderRadius;
     final padding = const EdgeInsets.all(5);
     final myKey = key ?? UniqueKey();
+    final isPending = ref.watch(pendingItemsProvider.select((items) => items.contains(poster.id)));
 
     final derivePosterColor = ref.watch(clientSettingsProvider.select((value) => value.dynamicPosterColors));
     final backgroundColor = derivePosterColor
@@ -95,9 +120,7 @@ class PosterImage extends ConsumerWidget {
             border: Border.all(width: 1, color: Colors.white.withAlpha(45)),
           ),
           child: FladderImage(
-            image: primaryPosters
-                ? poster.images?.primary
-                : poster.getPosters?.primary ?? poster.getPosters?.backDrop?.lastOrNull,
+            image: _resolveImage(),
             placeHolder: PosterPlaceholder(item: poster),
           ),
         ),
@@ -142,6 +165,36 @@ class PosterImage extends ConsumerWidget {
           VideoDurationOverlay(
             poster: poster,
             padding: padding,
+          ),
+          IgnorePointer(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: isPending
+                  ? DecoratedBox(
+                      key: const ValueKey('pending'),
+                      decoration: BoxDecoration(borderRadius: radius, color: Colors.black54),
+                      child: Center(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.9),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: SizedBox.square(
+                              dimension: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 4,
+                                strokeCap: StrokeCap.round,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(key: ValueKey('idle')),
+            ),
           ),
         ],
         focusedOverlays: [

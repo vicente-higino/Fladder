@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:http/http.dart' as http;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -13,6 +14,7 @@ import 'package:fladder/jellyfin/jellyfin_open_api.swagger.dart';
 import 'package:fladder/models/account_model.dart';
 import 'package:fladder/providers/api_provider.dart';
 import 'package:fladder/providers/user_provider.dart';
+import 'package:fladder/services/local_network_permission.dart';
 
 part 'connectivity_provider.g.dart';
 
@@ -111,10 +113,13 @@ final offlineStateProvider = Provider<bool>((ref) {
   return ref.watch(connectivityStatusProvider.select((value) => value.isOffline)) && isLoggedIn;
 });
 
+final localConnectionAvailableProvider = StateProvider<bool>((ref) => false);
+
 @Riverpod(keepAlive: true)
 class ConnectivityStatus extends _$ConnectivityStatus {
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   Timer? _retryTimer;
+  Completer<void>? _probeCompleter;
   List<ConnectivityResult> _connectivityResults = const [ConnectivityResult.none];
   int _generation = 0;
   int _retryAttempt = 0;
@@ -147,64 +152,88 @@ class ConnectivityStatus extends _$ConnectivityStatus {
     ref.onDispose(() {
       _generation++;
       _retryTimer?.cancel();
+      _resolveProbe();
       unawaited(_connectivitySubscription?.cancel());
     });
 
+    _probeCompleter = Completer<void>();
     Future.microtask(refresh);
     return const ConnectivitySnapshot();
   }
 
+  Future<void> checkConnectivity({bool immediate = false}) => refresh();
+
+  Future<void> waitForProbe() async => _probeCompleter?.future;
+
+  void _resolveProbe() {
+    if (!(_probeCompleter?.isCompleted ?? true)) {
+      _probeCompleter?.complete();
+    }
+    _probeCompleter = null;
+  }
+
   Future<void> refresh({List<ConnectivityResult>? connectivityResults}) async {
     final generation = ++_generation;
+    _probeCompleter ??= Completer<void>();
     _retryTimer?.cancel();
     _retryTimer = null;
 
-    final account = ref.read(userProvider);
-    if (account == null) {
-      ref.read(localConnectionAvailableProvider.notifier).state = false;
-      state = ConnectivitySnapshot(networkType: _networkType(_connectivityResults));
-      return;
-    }
-
-    List<ConnectivityResult> results;
-    if (connectivityResults != null) {
-      results = connectivityResults;
-    } else {
-      try {
-        results = await ref.read(connectivityAdapterProvider).checkConnectivity();
-      } catch (error) {
-        log('Unable to classify the active network adapter: $error');
-        results = _connectivityResults;
+    try {
+      final account = ref.read(userProvider);
+      if (account == null) {
+        ref.read(localConnectionAvailableProvider.notifier).state = false;
+        state = ConnectivitySnapshot(networkType: _networkType(_connectivityResults));
+        return;
       }
-    }
-    if (!_isCurrent(generation)) return;
-    _connectivityResults = results;
 
-    final primaryUrl = normalizeUrl(account.credentials.url);
-    final localUrl = normalizeUrl(account.credentials.localUrl ?? '');
-    var localAvailable = false;
+      List<ConnectivityResult> results;
+      if (connectivityResults != null) {
+        results = connectivityResults;
+      } else {
+        try {
+          results = await ref.read(connectivityAdapterProvider).checkConnectivity();
+        } catch (error) {
+          log('Unable to classify the active network adapter: $error');
+          results = _connectivityResults;
+        }
+      }
+      if (!_isCurrent(generation)) return;
+      _connectivityResults = results;
 
-    if (localUrl.isNotEmpty) {
-      final localInfo = await ref.read(jellyfinIdentityProbeProvider)(localUrl);
-      if (!_isCurrentAccount(generation, account)) return;
-      localAvailable = localInfo?.id == account.credentials.serverId;
-    }
+      final primaryUrl = normalizeUrl(account.credentials.url);
+      final localUrl = normalizeUrl(account.credentials.localUrl ?? '');
+      var localAvailable = false;
 
-    ref.read(localConnectionAvailableProvider.notifier).state = localAvailable;
-    final activeUrl = localAvailable ? localUrl : primaryUrl;
+      if (localUrl.isNotEmpty) {
+        final permission = await checkLocalNetworkPermission();
+        if (!_isCurrentAccount(generation, account)) return;
+        if (permission == LocalNetworkPermissionStatus.granted) {
+          final localInfo = await ref.read(jellyfinIdentityProbeProvider)(localUrl);
+          if (!_isCurrentAccount(generation, account)) return;
+          localAvailable = localInfo?.id == account.credentials.serverId;
+        }
+      }
 
-    if (activeUrl.isEmpty) {
-      _setOffline(activeUrl);
-      return;
-    }
+      ref.read(localConnectionAvailableProvider.notifier).state = localAvailable;
+      final activeUrl = localAvailable ? localUrl : primaryUrl;
 
-    final reachable = localAvailable || await ref.read(jellyfinReachabilityProbeProvider)(activeUrl) != null;
-    if (!_isCurrentAccount(generation, account) || activeUrl != _activeServerUrl()) return;
+      if (activeUrl.isEmpty) {
+        _setOffline(activeUrl);
+        return;
+      }
 
-    if (reachable) {
-      _setOnline(activeUrl);
-    } else {
-      _setOffline(activeUrl);
+      final reachable = localAvailable || await ref.read(jellyfinReachabilityProbeProvider)(activeUrl) != null;
+      if (!_isCurrentAccount(generation, account) || activeUrl != _activeServerUrl()) return;
+
+      if (reachable) {
+        _setOnline(activeUrl);
+      } else {
+        _setOffline(activeUrl);
+      }
+    } finally {
+      if (_isCurrent(generation)) {
+        _resolveProbe();
+      }
     }
   }
 
@@ -321,7 +350,7 @@ Future<PublicSystemInfo?> fetchSystemInfoDynamic(String baseUrl) async {
     final uri = buildServerUriFromBase(baseUrl, pathSegments: const ['System', 'Info', 'Public']);
     if (uri == null) return null;
     final response = await http.get(uri).timeout(const Duration(seconds: 5));
-    if (response.statusCode == 200) {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
       return PublicSystemInfo.fromJson(jsonDecode(response.body));
     }
     return null;
@@ -330,5 +359,3 @@ Future<PublicSystemInfo?> fetchSystemInfoDynamic(String baseUrl) async {
     return null;
   }
 }
-
-final localConnectionAvailableProvider = StateProvider<bool>((ref) => false);

@@ -35,7 +35,7 @@
 
 ## Fork Release Highlights
 
-This fork includes the following additions on top of Fladder 0.10.3:
+This fork includes the following additions on top of Fladder 0.12.0:
 
 * Configurable default playback speed, with an option to remember the last speed used across sessions
 * Localized playback-speed settings and descriptions across all bundled languages
@@ -122,7 +122,8 @@ Web/Desktop [try out the web build!](https://DonutWare.github.io/Fladder)
 
 ## Planned Features
 
-* Music playback
+* Chromecast support
+* Improved dPad navigation for non-tv devices
 * [And more???](https://github.com/DonutWare/Fladder/discussions/categories/ideas)
 
 ## Download

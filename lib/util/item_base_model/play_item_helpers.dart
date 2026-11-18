@@ -2,12 +2,13 @@ import 'dart:developer';
 import 'dart:math' show Random, min;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:async/async.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:square_progress_indicator/square_progress_indicator.dart';
 
@@ -46,7 +47,7 @@ extension BookBaseModelExtension on BookModel? {
     BuildContext context,
     WidgetRef ref, {
     int? currentPage,
-    AutoDisposeStateNotifierProvider<BookDetailsProviderNotifier, BookProviderModel>? provider,
+    StateNotifierProvider<BookDetailsProviderNotifier, BookProviderModel>? provider,
     BuildContext? parentContext,
   }) async {
     if (kIsWeb) {
@@ -81,7 +82,7 @@ extension PhotoAlbumExtension on PhotoAlbumModel? {
     BuildContext context,
     WidgetRef ref, {
     int? currentPage,
-    AutoDisposeStateNotifierProvider<BookDetailsProviderNotifier, BookProviderModel>? provider,
+    StateNotifierProvider<BookDetailsProviderNotifier, BookProviderModel>? provider,
     BuildContext? parentContext,
   }) async {
     final albumModel = this;
@@ -136,12 +137,10 @@ extension ChannelModelExtension on ChannelModel? {
     BuildContext context,
     WidgetRef ref, {
     int? currentPage,
-    AutoDisposeStateNotifierProvider<BookDetailsProviderNotifier, BookProviderModel>? provider,
+    StateNotifierProvider<BookDetailsProviderNotifier, BookProviderModel>? provider,
     BuildContext? parentContext,
   }) async {
     if (this == null) return;
-
-    await ref.read(videoPlayerProvider.notifier).init();
 
     final op = CancelableOperation.fromFuture(ref.read(playbackModelHelper).createPlaybackModel(
           context,
@@ -193,8 +192,6 @@ extension AudioModelAudioPlayback on AudioModel? {
     final audio = this;
     if (audio == null) return;
 
-    await ref.read(videoPlayerProvider.notifier).init();
-
     final queue = await _fetchAudioTrackQueue(audio, ref);
     if (queue.isEmpty) {
       FladderSnack.show(context.localized.unableToPlayMedia, context: context);
@@ -238,8 +235,6 @@ extension PlayQueueSource on PlaybackQueueSource? {
   }) async {
     final queueSource = this;
     if (queueSource == null) return;
-
-    await ref.read(videoPlayerProvider.notifier).init();
 
     final queue = await queueSource.fetchQueue(ref.read);
     if (queue.isEmpty) {
@@ -287,8 +282,6 @@ extension ArtistModelLatestTracksPlayback on ArtistModel? {
   }) async {
     final artist = this;
     if (artist == null) return;
-
-    await ref.read(videoPlayerProvider.notifier).init();
 
     if (shuffleEnabled != null) {
       ref.read(mediaPlaybackProvider.notifier).update((s) => s.copyWith(shuffleEnabled: shuffleEnabled));
@@ -346,8 +339,6 @@ extension AudioModelListPlayback on List<AudioModel> {
   }) async {
     if (isEmpty) return;
 
-    await ref.read(videoPlayerProvider.notifier).init();
-
     final queue = cast<ItemBaseModel>().toList();
 
     final op = CancelableOperation.fromFuture(ref.read(playbackModelHelper).createPlaybackModel(
@@ -386,8 +377,6 @@ extension AlbumModelInstantMixPlayback on AlbumModel? {
   }) async {
     final album = this;
     if (album == null) return;
-
-    await ref.read(videoPlayerProvider.notifier).init();
 
     final queue = await _fetchAlbumQueue(album, ref);
     if (queue.isEmpty) {
@@ -577,8 +566,6 @@ Future<void> _playInstantMix(
   Duration? startPosition,
   bool showPlaybackOption = false,
 }) async {
-  await ref.read(videoPlayerProvider.notifier).init();
-
   final queue = await queueSource.fetchQueue(ref.read);
   if (queue.isEmpty) {
     FladderSnack.show(context.localized.unableToPlayMedia, context: context);
@@ -645,8 +632,6 @@ extension ItemBaseModelExtensions on ItemBaseModel? {
   }) async {
     if (itemModel == null) return;
 
-    await ref.read(videoPlayerProvider.notifier).init();
-
     final op = CancelableOperation.fromFuture(ref.read(playbackModelHelper).createPlaybackModel(
           context,
           itemModel,
@@ -680,8 +665,6 @@ extension ItemBaseModelExtensions on ItemBaseModel? {
 extension ItemBaseModelsBooleans on List<ItemBaseModel> {
   Future<void> playLibraryItems(BuildContext context, WidgetRef ref, {bool shuffle = false}) async {
     if (isEmpty) return;
-
-    await ref.read(videoPlayerProvider.notifier).init();
 
     final op = CancelableOperation.fromFuture(Future(() async {
       List<List<ItemBaseModel>> newList = await Future.wait(map((element) async {
@@ -739,8 +722,6 @@ extension ItemBaseModelsBooleans on List<ItemBaseModel> {
 
   Future<void> playMusicItems(BuildContext context, WidgetRef ref, {bool shuffle = false}) async {
     if (isEmpty) return;
-
-    await ref.read(videoPlayerProvider.notifier).init();
 
     final op = CancelableOperation.fromFuture(Future(() async {
       final newList = await Future.wait(map((element) async {

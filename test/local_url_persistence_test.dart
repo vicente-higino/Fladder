@@ -17,7 +17,7 @@ void main() {
       id: 'user-id',
       avatar: '',
       lastUsed: DateTime(2026),
-      credentials: CredentialsModel.internal(
+      credentials: CredentialsModel(
         token: 'token',
         url: 'http://192.168.1.100:8096',
         serverName: 'Test Server',

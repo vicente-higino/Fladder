@@ -1,12 +1,13 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:volume_controller/volume_controller.dart';
 
@@ -20,40 +21,14 @@ final videoPlayerSettingsProvider =
   return VideoPlayerSettingsProviderNotifier(ref);
 });
 
+final subtitleTimingOffsetProvider = StateProvider<Duration>((ref) => Duration.zero);
+
 final playbackRateProvider = StateProvider<double>((ref) => 1.0);
 
 class VideoPlayerSettingsProviderNotifier extends StateNotifier<VideoPlayerSettingsModel> {
-  VideoPlayerSettingsProviderNotifier(this.ref) : super(_sanitizeCrossfade(VideoPlayerSettingsModel())) {
-    _initVolumeSync();
-  }
+  VideoPlayerSettingsProviderNotifier(this.ref) : super(_sanitizeCrossfade(VideoPlayerSettingsModel()));
 
   final Ref ref;
-
-  void _initVolumeSync() async {
-    // Initialize volume from system volume on mobile/supported platforms
-    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-      VolumeController.instance.showSystemUI = false;
-      final initialVolume = await VolumeController.instance.getVolume();
-      state = state.copyWith(internalVolume: initialVolume * 100);
-
-      VolumeController.instance.addListener((volume) {
-        // Update both the model and the player when system volume changes (hardware buttons)
-        final newVolume = volume * 100;
-        if ((state.internalVolume - newVolume).abs() > 0.1) {
-          state = state.copyWith(internalVolume: newVolume);
-          ref.read(videoPlayerProvider).setVolume(newVolume);
-        }
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-      VolumeController.instance.removeListener();
-    }
-    super.dispose();
-  }
 
   @override
   set state(VideoPlayerSettingsModel value) {
@@ -63,6 +38,8 @@ class VideoPlayerSettingsProviderNotifier extends StateNotifier<VideoPlayerSetti
     ref.read(sharedUtilityProvider).videoPlayerSettings = value;
     if (!oldState.playerSame(value)) {
       ref.read(videoPlayerProvider.notifier).init();
+    } else if (ref.read(playBackModel)?.item != null) {
+      ref.read(videoPlayerProvider.notifier).applySettingsChanged(value);
     }
   }
 
@@ -95,19 +72,23 @@ class VideoPlayerSettingsProviderNotifier extends StateNotifier<VideoPlayerSetti
   void setScreensaver(Screensaver? value) => state = state.copyWith(screensaver: value ?? Screensaver.black);
 
   void setVolume(double value) {
-    state = state.copyWith(internalVolume: value);
-    ref.read(videoPlayerProvider).setVolume(value);
-    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-      VolumeController.instance.setVolume(value / 100);
-    }
+    _setVolume(value);
   }
 
   void steppedVolume(int i) {
     final value = (state.volume + i).clamp(0, 100).toDouble();
+    _setVolume(value);
+  }
+
+  void _setVolume(double value) {
     state = state.copyWith(internalVolume: value);
-    ref.read(videoPlayerProvider).setVolume(value);
-    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    if ({TargetPlatform.android, TargetPlatform.iOS}.contains(defaultTargetPlatform)) {
+      ref.read(videoPlayerProvider).setVolume(100);
+      VolumeController.instance.showSystemUI = false;
       VolumeController.instance.setVolume(value / 100);
+      log("Setting system volume to $value");
+    } else {
+      ref.read(videoPlayerProvider).setVolume(value);
     }
   }
 
@@ -219,6 +200,8 @@ class VideoPlayerSettingsProviderNotifier extends StateNotifier<VideoPlayerSetti
   }
 
   void setCrossfadeDurationMs(int value) => state = state.copyWith(crossfadeDurationMs: value);
+
+  void setRefreshRateSwitching(bool value) => state = state.copyWith(refreshRateSwitching: value);
 
   static VideoPlayerSettingsModel _sanitizeCrossfade(VideoPlayerSettingsModel value) {
     if (!value.canUseCrossfade && value.enableCrossfade) {

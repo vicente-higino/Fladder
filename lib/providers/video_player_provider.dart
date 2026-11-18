@@ -2,9 +2,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:path/path.dart' as p;
 
 import 'package:fladder/models/item_base_model.dart';
@@ -12,7 +13,9 @@ import 'package:fladder/models/media_playback_model.dart';
 import 'package:fladder/models/playback/media_segment_refresh_controller.dart';
 import 'package:fladder/models/playback/playback_model.dart';
 import 'package:fladder/models/playback/playback_queue_state.dart';
+import 'package:fladder/models/settings/video_player_settings.dart';
 import 'package:fladder/providers/api_provider.dart';
+import 'package:fladder/providers/low_resource_provider.dart';
 import 'package:fladder/providers/settings/client_settings_provider.dart';
 import 'package:fladder/providers/settings/video_player_settings_provider.dart';
 import 'package:fladder/wrappers/media_control_wrapper.dart';
@@ -69,6 +72,16 @@ class VideoPlayerNotifier extends StateNotifier<MediaControlsWrapper> {
   MediaPlaybackModel get playbackState => ref.read(mediaPlaybackProvider);
   bool get initializationInProgress => _initialization != null;
   bool get hasCompletedInitialization => _hasCompletedInitialization;
+
+  void applySettingsChanged(VideoPlayerSettingsModel settings) {
+    final currentItem = ref.read(playBackModel)?.item;
+    if (currentItem != null) {
+      state.applyReplayGain(
+        currentItem,
+        settings: settings,
+      );
+    }
+  }
 
   Future<void> init() {
     final activeInitialization = _initialization;
@@ -176,15 +189,20 @@ class VideoPlayerNotifier extends StateNotifier<MediaControlsWrapper> {
   }
 
   Future<bool> loadPlaybackItem(PlaybackModel model, Duration startPosition) async {
+    if (!hasCompletedInitialization) {
+      await init();
+    }
     _mediaSegmentRefreshController.cancel();
     ref.read(playBackModel)?.dispose();
-    await state.stop();
+    await state.stop(keepMediaSession: true);
     final playbackSettings = ref.read(videoPlayerSettingsProvider);
     final initialPlaybackRate = playbackSettings.effectivePlaybackRate;
     ref.read(playbackRateProvider.notifier).state = initialPlaybackRate;
+    ref.read(subtitleTimingOffsetProvider.notifier).state = Duration.zero; //reset subtitle offset on new video
 
     final useMinimizedPlayer =
         model.item.type == FladderItemType.audio || model.mediaStreams?.videoStreams.isEmpty == true;
+    final effectiveStartPosition = await model.resolvedStartPosition(startPosition);
 
     mediaState.update((state) => state.copyWith(
           state: useMinimizedPlayer ? VideoPlayerState.minimized : VideoPlayerState.fullScreen,
@@ -192,11 +210,12 @@ class VideoPlayerNotifier extends StateNotifier<MediaControlsWrapper> {
           buffering: true,
           errorPlaying: false,
           skippedSegments: {},
+          position: effectiveStartPosition,
+          lastPosition: effectiveStartPosition,
         ));
 
     final media = model.media;
     PlaybackModel? newPlaybackModel = model;
-    final effectiveStartPosition = await model.resolvedStartPosition(startPosition);
 
     if (media != null) {
       ref.read(playBackModel.notifier).update((state) => newPlaybackModel);
@@ -231,6 +250,9 @@ class VideoPlayerNotifier extends StateNotifier<MediaControlsWrapper> {
     int currentIndex,
     Duration startPosition,
   ) async {
+    if (!hasCompletedInitialization) {
+      await init();
+    }
     _mediaSegmentRefreshController.cancel();
     final currentPlayerState = ref.read(mediaPlaybackProvider).state;
     final keepFullScreenLayout = currentPlayerState == VideoPlayerState.fullScreen;
@@ -283,6 +305,12 @@ class VideoPlayerNotifier extends StateNotifier<MediaControlsWrapper> {
   }
 
   Future<void> addToTemporaryQueue(List<ItemBaseModel> items) async {
+    if (items.isEmpty) return;
+    if (ref.read(playBackModel) == null) {
+      final model = await ref.read(playbackModelHelper).createPlaybackModel(null, items.first, libraryQueue: items);
+      if (model != null) await loadAudioPlaybackItem(model, items, 0, Duration.zero);
+      return;
+    }
     await state.addToTemporaryQueue(items);
   }
 
@@ -306,7 +334,10 @@ class VideoPlayerNotifier extends StateNotifier<MediaControlsWrapper> {
     await state.jumpToQueueItem(item);
   }
 
-  Future<void> openPlayer(BuildContext context) async => state.openPlayer(context);
+  Future<void> openPlayer(BuildContext context) async {
+    if (ref.read(lowResourceModeProvider)) PaintingBinding.instance.imageCache.clear();
+    return state.openPlayer(context);
+  }
 
   void cancelMediaSegmentRefresh() => _mediaSegmentRefreshController.cancel();
 

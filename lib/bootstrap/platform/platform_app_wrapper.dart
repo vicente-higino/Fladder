@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,7 +7,6 @@ import 'package:fladder/bootstrap/platform/base_app_wrapper.dart';
 import 'package:fladder/bootstrap/platform/desktop_platform_wrapper.dart';
 import 'package:fladder/bootstrap/platform/mobile_app_wrapper.dart';
 import 'package:fladder/bootstrap/platform/web_app_wrapper.dart';
-import 'package:fladder/providers/connectivity_provider.dart';
 import 'package:fladder/util/adaptive_layout/adaptive_layout.dart';
 
 class PlatformAppWrapper extends ConsumerStatefulWidget {
@@ -30,17 +29,6 @@ class _PlatformAppWrapperState extends ConsumerState<PlatformAppWrapper> with Wi
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    switch (state) {
-      case AppLifecycleState.resumed:
-        // Safety check to ensure connectivity status is up to date when the app is resumed
-        ref.read(connectivityStatusProvider.notifier).refresh();
-      default:
-        break;
-    }
   }
 
   @override

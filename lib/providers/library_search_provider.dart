@@ -1,12 +1,13 @@
 import 'dart:developer';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:async/async.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:chopper/chopper.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
 import 'package:fladder/jellyfin/jellyfin_open_api.swagger.dart';
@@ -71,12 +72,14 @@ class LibrarySearchNotifier extends StateNotifier<LibrarySearchModel> {
     state = state.resetLazyLoad();
 
     final views = await loadViews(parentIds);
+    if (!mounted) return;
 
     final isFolder = views.keys.map((e) => e.id).toList().containsAny(parentIds) == false && parentIds.isNotEmpty;
 
     if (!wasInitialized) {
       if (isFolder) {
         await loadFolders(folderId: parentIds);
+        if (!mounted) return;
       } else {
         state = state.copyWith(views: views);
       }
@@ -93,6 +96,7 @@ class LibrarySearchNotifier extends StateNotifier<LibrarySearchModel> {
     if (firstView != null && state.views.isNotEmpty) {
       await loadFilters(activeFilter);
     }
+    if (!mounted) return;
 
     if (!wasInitialized) {
       wasInitialized = true;
@@ -107,7 +111,7 @@ class LibrarySearchNotifier extends StateNotifier<LibrarySearchModel> {
   }
 
   Future<void> loadMore({bool? init}) async {
-    if ((loading && init != true) || state.allDoneFetching) return;
+    if (!mounted || (loading && init != true) || state.allDoneFetching) return;
     loading = true;
 
     final newLastIndices = Map<String, int>.from(state.lastIndices);
@@ -209,17 +213,22 @@ class LibrarySearchNotifier extends StateNotifier<LibrarySearchModel> {
   Future<Map<ViewModel, bool>> loadViews(
     List<String>? viewModelId,
   ) async {
-    final response = await api.usersUserIdViewsGet(includeHidden: false);
-    final createdViews = response.body?.items?.map((e) => ViewModel.fromBodyDto(e, ref));
+    try {
+      final response = await api.usersUserIdViewsGet(includeHidden: false);
+      final createdViews = response.body?.items?.map((e) => ViewModel.fromBodyDto(e, ref));
 
-    Map<ViewModel, bool> mappedModels =
-        createdViews?.isNotEmpty ?? false ? {for (var element in createdViews!) element: false} : {};
+      Map<ViewModel, bool> mappedModels =
+          createdViews?.isNotEmpty ?? false ? {for (var element in createdViews!) element: false} : {};
 
-    final selectedModels = mappedModels.keys.where((element) => viewModelId?.contains(element.id) ?? false).toList();
+      final selectedModels = mappedModels.keys.where((element) => viewModelId?.contains(element.id) ?? false).toList();
 
-    final views = mappedModels.setKeys(selectedModels, true);
+      final views = mappedModels.setKeys(selectedModels, true);
 
-    return views;
+      return views;
+    } catch (e) {
+      log("Error loading views: $e");
+      return {};
+    }
   }
 
   Future<void> loadFolders({List<String>? folderId}) async {
@@ -485,25 +494,29 @@ class LibrarySearchNotifier extends StateNotifier<LibrarySearchModel> {
 
   Future<void> setSelectedAsFavorite(bool bool) async {
     final Map<String, UserData> updateInfo = {};
+    final user = ref.read(userProvider.notifier);
     for (var i = 0; i < state.selectedPosters.length; i++) {
-      final response = await ref.read(userProvider.notifier).setAsFavorite(bool, state.selectedPosters[i].id);
+      final response = await user.setAsFavorite(bool, state.selectedPosters[i].id);
       final userData = response?.bodyOrThrow;
       if (userData != null) {
         updateInfo.putIfAbsent(state.selectedPosters[i].id, () => userData);
       }
     }
+    if (!mounted) return;
     updateMultiUserData(updateInfo);
   }
 
   Future<void> setSelectedAsWatched(bool bool) async {
     final Map<String, UserData> updateInfo = {};
+    final user = ref.read(userProvider.notifier);
     for (var i = 0; i < state.selectedPosters.length; i++) {
-      final response = await ref.read(userProvider.notifier).markAsPlayed(bool, state.selectedPosters[i].id);
+      final response = await user.markAsPlayed(bool, state.selectedPosters[i].id);
       final userData = response?.bodyOrThrow;
       if (userData != null) {
         updateInfo.putIfAbsent(state.selectedPosters[i].id, () => userData);
       }
     }
+    if (!mounted) return;
     updateMultiUserData(updateInfo);
   }
 
@@ -702,6 +715,7 @@ class LibrarySearchNotifier extends StateNotifier<LibrarySearchModel> {
         return PlaylistAudioQueueSource(
           playlistId: currentItem.id,
           limit: _libraryMusicRefillLimit,
+          shuffle: shuffle,
         );
       }
 
@@ -800,6 +814,7 @@ class LibrarySearchNotifier extends StateNotifier<LibrarySearchModel> {
           limit: _libraryMusicInitialQueueLimit,
           startIndex: 0,
         );
+
         if (initialQueue.isEmpty) return null;
 
         final model = await ref.read(playbackModelHelper).createPlaybackModel(
@@ -998,12 +1013,11 @@ class LibrarySearchNotifier extends StateNotifier<LibrarySearchModel> {
 
   void updateFilter(LibraryFiltersModel model) {
     ref.read(filterProvider.notifier).saveFilter(
-          LibraryFiltersModel.fromLibrarySearch(
-            model.name,
-            state,
+          model.copyWith(
+            name: model.name,
+            filter: state.filters,
             isFavourite: model.isFavourite,
             id: model.id,
-            showInSideBar: model.showInSideBar,
             viewNames: state.folderOverwrite.isNotEmpty
                 ? state.folderOverwrite.included.map((e) => e.name).toList()
                 : state.views.included.map((e) => e.name).toList(),

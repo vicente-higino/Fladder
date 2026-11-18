@@ -1,4 +1,6 @@
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import 'package:fladder/jellyfin/jellyfin_open_api.enums.swagger.dart' as enums;
 import 'package:fladder/jellyfin/jellyfin_open_api.swagger.dart';
@@ -96,6 +98,19 @@ class HomePreferencesNotifier extends StateNotifier<HomePreferencesModel> {
     }
   }
 
+  bool get hasChanges {
+    final user = ref.read(userProvider);
+    final currentConfig = user?.userConfiguration;
+    if (currentConfig == null) return false;
+
+    const listEquals = DeepCollectionEquality();
+
+    return !listEquals.equals(currentConfig.orderedViews, state.orderedLibraryIds) ||
+        !listEquals.equals(currentConfig.latestItemsExcludes, state.latestItemsExcludes) ||
+        currentConfig.hidePlayedInLatest != state.hidePlayedInLatest ||
+        !listEquals.equals(currentConfig.groupedFolders, state.groupedFolders);
+  }
+
   Future<void> _saveLibraryPreferences() async {
     final user = ref.read(userProvider);
     final currentConfig = user?.userConfiguration;
@@ -121,5 +136,9 @@ class HomePreferencesNotifier extends StateNotifier<HomePreferencesModel> {
   bool _isGroupableFolder(enums.CollectionType? type) {
     if (type == null) return true;
     return _groupableTypes.contains(type);
+  }
+
+  void revert() {
+    load();
   }
 }
